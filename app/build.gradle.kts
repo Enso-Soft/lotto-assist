@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.enso.lotto_assist"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.enso.lotto_assist"
