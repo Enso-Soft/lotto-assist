@@ -21,3 +21,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "lotto-assist"
 include(":app")
+include(":core:di")
+include(":core:data")
+include(":core:domain")
+include(":core:network")
+include(":core:database")
+include(":feature:home")
