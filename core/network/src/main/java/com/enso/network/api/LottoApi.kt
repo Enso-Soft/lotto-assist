@@ -1,5 +1,6 @@
 package com.enso.network.api
 
+import com.enso.network.model.LottoInformation
 import com.enso.network.model.NetworkResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -9,5 +10,5 @@ interface LottoApi {
     suspend fun getLottoNumber(
         @Query("method") method: String = "getLottoNumber",
         @Query("drwNo") drwNo: Int
-    ): NetworkResponse<String>
+    ): LottoInformation
 }
