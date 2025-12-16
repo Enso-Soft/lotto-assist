@@ -563,15 +563,12 @@ private fun processImageProxy(
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
-                var foundLottoQr = false
-
+                // 로또 QR 코드를 찾아서 처리
                 for (barcode in barcodes) {
                     if (barcode.format == Barcode.FORMAT_QR_CODE) {
                         barcode.rawValue?.let { content ->
                             if (content.contains("?v=")) {
-                                foundLottoQr = true
-
-                                // cornerPoints 추출
+                                // 로또 QR 코드 발견
                                 barcode.cornerPoints?.let { points ->
                                     if (points.size >= 4) {
                                         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
@@ -583,6 +580,7 @@ private fun processImageProxy(
                                             sourceImageHeight = imageProxy.height,
                                             rotationDegrees = rotationDegrees
                                         )
+                                        // QR이 감지될 때만 bounds 업데이트
                                         onBoundsUpdate(bounds)
                                         onQrCodeDetected(content, bounds)
                                     }
@@ -591,15 +589,12 @@ private fun processImageProxy(
                         }
                     }
                 }
-
-                // 로또 QR 코드가 없으면 bounds 제거
-                if (!foundLottoQr) {
-                    onBoundsUpdate(null)
-                }
+                // 중요: QR이 감지되지 않아도 onBoundsUpdate(null)을 호출하지 않음
+                // 이렇게 하면 일시적인 인식 실패 시에도 박스가 유지되어 깜빡임 방지
             }
             .addOnFailureListener {
                 it.printStackTrace()
-                onBoundsUpdate(null)
+                // onBoundsUpdate(null) 제거: 에러 시에도 박스 유지
             }
             .addOnCompleteListener {
                 imageProxy.close()

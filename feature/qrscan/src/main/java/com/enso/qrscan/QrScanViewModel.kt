@@ -98,7 +98,7 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
                     it.copy(
                         error = "유효하지 않은 로또 QR 코드입니다",
                         isScanning = true,
-                        detectedBounds = null,
+                        // detectedBounds는 유지 (박스가 사라지지 않도록)
                         isSuccess = false
                     )
                 }
