@@ -1,5 +1,6 @@
 package com.enso.data.repository
 
+import android.util.Log
 import com.enso.data.datasource.LottoLocalDataSource
 import com.enso.data.datasource.LottoRemoteDataSource
 import com.enso.data.mapper.toDomain
@@ -27,7 +28,7 @@ class LottoRepositoryImpl @Inject constructor(
             localDataSource.getResultByRound(round)?.toDomain()
                 ?: run {
                     val response = remoteDataSource.getLottoResult(round)
-                    localDataSource.insertResult(response.toEntity())
+                    localDataSource.insertResult(response.toEntity(round))
                     response.toDomain()
                 }
         }
@@ -44,21 +45,26 @@ class LottoRepositoryImpl @Inject constructor(
             val localCount = localDataSource.getCount()
 
             if (localCount == 0) {
+                // 최근 100개 회차만 가져오기
                 syncAllRounds(1, currentRound)
             } else {
                 val latestLocalRound = localDataSource.getLatestRound() ?: 0
                 if (latestLocalRound < currentRound) {
+                    // 최신 회차만 추가
                     syncAllRounds(latestLocalRound + 1, currentRound)
                 }
             }
+            Unit
         }
     }
 
     private suspend fun syncAllRounds(fromRound: Int, toRound: Int) = coroutineScope {
+        Log.d("whk__", "Syncing rounds from $fromRound to $toRound")
         val batchSize = 50
         val rounds = (fromRound..toRound).toList()
 
         rounds.chunked(batchSize).forEach { batch ->
+            Log.d("whk__", "batch : $batch")
             val results = batch.map { round ->
                 async {
                     runCatching { remoteDataSource.getLottoResult(round) }
@@ -67,12 +73,18 @@ class LottoRepositoryImpl @Inject constructor(
 
             val successfulResults = results
                 .filter { it.isSuccess }
-                .mapNotNull { it.getOrNull()?.toEntity() }
+                .mapIndexedNotNull { index, result -> result.getOrNull()?.toEntity(batch[index]) }
 
             if (successfulResults.isNotEmpty()) {
+                android.util.Log.d("LottoRepository", "Inserting ${successfulResults.size} results")
                 localDataSource.insertResults(successfulResults)
+            } else {
+                android.util.Log.w("LottoRepository", "No successful results in batch")
             }
         }
+
+        val finalCount = localDataSource.getCount()
+        android.util.Log.d("LottoRepository", "Sync complete. Total count in DB: $finalCount")
     }
 
     override suspend fun getLocalCount(): Int = withContext(ioDispatcher) {

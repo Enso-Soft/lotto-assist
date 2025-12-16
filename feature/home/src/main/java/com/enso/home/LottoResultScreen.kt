@@ -75,7 +75,8 @@ fun LottoResultScreen(
     LottoResultContent(
         state = uiState,
         snackbarHostState = snackbarHostState,
-        onRefresh = { viewModel.onEvent(LottoResultEvent.Refresh) }
+        onRefresh = { viewModel.onEvent(LottoResultEvent.Refresh) },
+        onSelectResult = { result -> viewModel.onEvent(LottoResultEvent.SelectResult(result)) }
     )
 }
 
@@ -84,7 +85,8 @@ fun LottoResultScreen(
 private fun LottoResultContent(
     state: LottoResultUiState,
     snackbarHostState: SnackbarHostState,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onSelectResult: (LottoResult) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -93,7 +95,19 @@ private fun LottoResultContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                actions = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            // TODO: QR 스캔 화면으로 이동
+                        }
+                    ) {
+                        Text(
+                            text = "QR 스캔",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -113,7 +127,10 @@ private fun LottoResultContent(
                     ErrorContent(errorMessage = state.error)
                 }
                 else -> {
-                    LottoResultsContent(state = state)
+                    LottoResultsContent(
+                        state = state,
+                        onSelectResult = onSelectResult
+                    )
                 }
             }
         }
@@ -147,7 +164,10 @@ private fun ErrorContent(errorMessage: String) {
 }
 
 @Composable
-private fun LottoResultsContent(state: LottoResultUiState) {
+private fun LottoResultsContent(
+    state: LottoResultUiState,
+    onSelectResult: (LottoResult) -> Unit = {}
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (state.isSyncing) {
             androidx.compose.material3.LinearProgressIndicator(
@@ -156,14 +176,23 @@ private fun LottoResultsContent(state: LottoResultUiState) {
         }
 
         state.selectedResult?.let { result ->
-            LottoResultDetail(lottoResult = result)
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                LottoResultDetail(lottoResult = result)
+            }
         }
 
         if (state.lottoResults.isNotEmpty()) {
+            Text(
+                text = "전체 회차 (${state.lottoResults.size}개)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
             androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
+                modifier = Modifier.weight(1f)
             ) {
                 items(
                     count = state.lottoResults.size,
@@ -173,7 +202,7 @@ private fun LottoResultsContent(state: LottoResultUiState) {
                     LottoResultListItem(
                         result = result,
                         isSelected = result.round == state.selectedResult?.round,
-                        onClick = { }
+                        onClick = { onSelectResult(result) }
                     )
                 }
             }
@@ -221,7 +250,8 @@ private fun LottoResultListItem(
             } else {
                 MaterialTheme.colorScheme.surface
             }
-        )
+        ),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

@@ -21,7 +21,8 @@ import javax.inject.Inject
 class LottoResultViewModel @Inject constructor(
     private val getLottoResultUseCase: GetLottoResultUseCase,
     private val getAllLottoResultsUseCase: GetAllLottoResultsUseCase,
-    private val syncLottoResultsUseCase: SyncLottoResultsUseCase
+    private val syncLottoResultsUseCase: SyncLottoResultsUseCase,
+    private val lottoRepository: com.enso.domain.repository.LottoRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LottoResultUiState())
@@ -32,7 +33,21 @@ class LottoResultViewModel @Inject constructor(
 
     init {
         observeAllResults()
-        startInitialSync()
+        checkAndLoadInitialData()
+    }
+
+    private fun checkAndLoadInitialData() {
+        val currentRound = LottoDate.getCurrentDrawNumber()
+        _state.update { it.copy(currentRound = currentRound) }
+
+        viewModelScope.launch {
+            val localCount = lottoRepository.getLocalCount()
+            if (localCount == 0) {
+                // ROOM에 데이터가 없으면 API 호출
+                startInitialSync()
+            }
+            // 데이터가 있으면 observeAllResults()에서 자동으로 표시됨
+        }
     }
 
     private fun observeAllResults() {

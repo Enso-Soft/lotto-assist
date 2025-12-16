@@ -7,7 +7,6 @@ import javax.inject.Inject
 class LottoRemoteDataSourceImpl @Inject constructor(
     private val lottoApi: LottoApi
 ) : LottoRemoteDataSource {
-
     override suspend fun getLottoResult(round: Int): LottoInformation {
         return lottoApi.getLottoNumber(drwNo = round)
     }

@@ -27,9 +27,9 @@ fun LottoInformation.toDomain(): LottoResult {
     )
 }
 
-fun LottoInformation.toEntity(): LottoResultEntity {
+fun LottoInformation.toEntity(round: Int): LottoResultEntity {
     return LottoResultEntity(
-        round = drawRound,
+        round = round,
         drawDate = drawDate.time,
         number1 = drawNo1,
         number2 = drawNo2,
