@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,16 +28,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.enso.domain.model.FirstPrizeInfo
@@ -54,7 +63,8 @@ import java.util.Locale
 @Preview
 @Composable
 fun LottoResultScreen(
-    viewModel: LottoResultViewModel = hiltViewModel()
+    viewModel: LottoResultViewModel = hiltViewModel(),
+    onQrScanClick: ((callback: (round: Int, games: List<List<Int>>) -> Unit) -> Unit)? = null
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,7 +86,8 @@ fun LottoResultScreen(
         state = uiState,
         snackbarHostState = snackbarHostState,
         onRefresh = { viewModel.onEvent(LottoResultEvent.Refresh) },
-        onSelectResult = { result -> viewModel.onEvent(LottoResultEvent.SelectResult(result)) }
+        onSelectResult = { result -> viewModel.onEvent(LottoResultEvent.SelectResult(result)) },
+        onQrScanClick = onQrScanClick
     )
 }
 
@@ -86,8 +97,16 @@ private fun LottoResultContent(
     state: LottoResultUiState,
     snackbarHostState: SnackbarHostState,
     onRefresh: () -> Unit,
-    onSelectResult: (LottoResult) -> Unit
+    onSelectResult: (LottoResult) -> Unit,
+    onQrScanClick: ((callback: (round: Int, games: List<List<Int>>) -> Unit) -> Unit)?
 ) {
+    val bottomSheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.PartiallyExpanded,
+        skipHiddenState = true
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState)
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -99,7 +118,10 @@ private fun LottoResultContent(
                 actions = {
                     androidx.compose.material3.TextButton(
                         onClick = {
-                            // TODO: QR 스캔 화면으로 이동
+                            onQrScanClick?.invoke { round, games ->
+                                // QR 스캔 결과 처리 로직 추가 가능
+                                // 예: Snackbar 표시
+                            }
                         }
                     ) {
                         Text(
@@ -112,27 +134,28 @@ private fun LottoResultContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = state.isSyncing,
-            onRefresh = onRefresh,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            sheetPeekHeight = 200.dp,
+            sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            sheetDragHandle = { BottomSheetDefaults.DragHandle() },
+            sheetContent = {
+                LottoResultListSheet(
+                    state = state,
+                    onSelectResult = { result ->
+                        onSelectResult(result)
+                        scope.launch {
+                            bottomSheetState.partialExpand()
+                        }
+                    }
+                )
+            },
+            modifier = Modifier.padding(paddingValues)
         ) {
-            when {
-                state.isSyncing && state.lottoResults.isEmpty() -> {
-                    LoadingContent()
-                }
-                state.error != null && state.lottoResults.isEmpty() -> {
-                    ErrorContent(errorMessage = state.error)
-                }
-                else -> {
-                    LottoResultsContent(
-                        state = state,
-                        onSelectResult = onSelectResult
-                    )
-                }
-            }
+            MainContent(
+                state = state,
+                onRefresh = onRefresh
+            )
         }
     }
 }
@@ -160,6 +183,81 @@ private fun ErrorContent(errorMessage: String) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(16.dp)
         )
+    }
+}
+
+@Composable
+private fun LottoResultListSheet(
+    state: LottoResultUiState,
+    onSelectResult: (LottoResult) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+    ) {
+        if (state.isSyncing) {
+            androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Text(
+            text = "전체 회차 (${state.lottoResults.size}개)",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        androidx.compose.foundation.lazy.LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(
+                count = state.lottoResults.size,
+                key = { index -> state.lottoResults[index].round }
+            ) { index ->
+                val result = state.lottoResults[index]
+                LottoResultListItem(
+                    result = result,
+                    isSelected = result.round == state.selectedResult?.round,
+                    onClick = { onSelectResult(result) }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainContent(
+    state: LottoResultUiState,
+    onRefresh: () -> Unit
+) {
+    PullToRefreshBox(
+        isRefreshing = state.isSyncing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        when {
+            state.isSyncing && state.lottoResults.isEmpty() -> {
+                LoadingContent()
+            }
+            state.error != null && state.lottoResults.isEmpty() -> {
+                ErrorContent(errorMessage = state.error)
+            }
+            else -> {
+                state.selectedResult?.let { result ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 200.dp)
+                    ) {
+                        LottoResultDetail(lottoResult = result)
+                    }
+                }
+            }
+        }
     }
 }
 
