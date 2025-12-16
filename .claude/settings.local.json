@@ -5,7 +5,10 @@
       "Bash(./gradlew :core:domain:build:*)",
       "Bash(ping:*)",
       "Bash(./gradlew build:*)",
-      "Bash(./gradlew test:*)"
+      "Bash(./gradlew test:*)",
+      "Bash(cat:*)",
+      "Bash(./gradlew :feature:home:testDebugUnitTest:*)",
+      "Bash(./gradlew:*)"
     ]
   }
 }

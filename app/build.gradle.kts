@@ -15,8 +15,11 @@ android {
 
 dependencies {
     implementation(project(":feature:home"))
+    implementation(project(":core:data"))
+    implementation(project(":core:domain"))
     implementation(project(":core:network"))
     implementation(project(":core:util"))
+    implementation(project(":core:di"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
