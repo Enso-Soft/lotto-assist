@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.enso.database.LottoDatabase
 import com.enso.database.dao.LottoResultDao
+import com.enso.database.dao.UserLottoTicketDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,12 +23,20 @@ object DatabaseModule {
             context,
             LottoDatabase::class.java,
             "lotto_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideLottoResultDao(database: LottoDatabase): LottoResultDao {
         return database.lottoResultDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserLottoTicketDao(database: LottoDatabase): UserLottoTicketDao {
+        return database.userLottoTicketDao()
     }
 }

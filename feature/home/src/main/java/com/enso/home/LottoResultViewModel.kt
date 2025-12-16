@@ -2,10 +2,17 @@ package com.enso.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.enso.domain.model.GameType
 import com.enso.domain.model.LottoResult
+import com.enso.domain.model.UserLottoTicket
+import com.enso.domain.usecase.CheckWinningUseCase
+import com.enso.domain.usecase.DeleteUserTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
+import com.enso.domain.usecase.GetUserTicketsUseCase
+import com.enso.domain.usecase.SaveUserTicketUseCase
 import com.enso.domain.usecase.SyncLottoResultsUseCase
+import com.enso.domain.usecase.UpdateUserTicketUseCase
 import com.enso.util.lotto_date.LottoDate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,6 +30,11 @@ class LottoResultViewModel @Inject constructor(
     private val getLottoResultUseCase: GetLottoResultUseCase,
     private val getAllLottoResultsUseCase: GetAllLottoResultsUseCase,
     private val syncLottoResultsUseCase: SyncLottoResultsUseCase,
+    private val getUserTicketsUseCase: GetUserTicketsUseCase,
+    private val saveUserTicketUseCase: SaveUserTicketUseCase,
+    private val updateUserTicketUseCase: UpdateUserTicketUseCase,
+    private val deleteUserTicketUseCase: DeleteUserTicketUseCase,
+    private val checkWinningUseCase: CheckWinningUseCase,
     private val lottoRepository: com.enso.domain.repository.LottoRepository
 ) : ViewModel() {
 
@@ -33,6 +46,7 @@ class LottoResultViewModel @Inject constructor(
 
     init {
         observeAllResults()
+        observeUserTickets()
         checkAndLoadInitialData()
     }
 
@@ -43,10 +57,8 @@ class LottoResultViewModel @Inject constructor(
         viewModelScope.launch {
             val localCount = lottoRepository.getLocalCount()
             if (localCount == 0) {
-                // ROOM에 데이터가 없으면 API 호출
                 startInitialSync()
             }
-            // 데이터가 있으면 observeAllResults()에서 자동으로 표시됨
         }
     }
 
@@ -60,6 +72,15 @@ class LottoResultViewModel @Inject constructor(
                             selectedResult = it.selectedResult ?: results.firstOrNull()
                         )
                     }
+                }
+        }
+    }
+
+    private fun observeUserTickets() {
+        viewModelScope.launch {
+            getUserTicketsUseCase()
+                .collect { tickets ->
+                    _state.update { it.copy(userTickets = tickets) }
                 }
         }
     }
@@ -89,6 +110,13 @@ class LottoResultViewModel @Inject constructor(
             is LottoResultEvent.Refresh -> refresh()
             is LottoResultEvent.SelectResult -> selectResult(event.result)
             is LottoResultEvent.StartSync -> startSync()
+            is LottoResultEvent.OpenQrScan -> openQrScan()
+            is LottoResultEvent.OpenManualInput -> openManualInput()
+            is LottoResultEvent.SaveQrTickets -> saveQrTickets(event.round, event.games)
+            is LottoResultEvent.SaveManualTicket -> saveManualTicket(event.round, event.numbers, event.isAuto)
+            is LottoResultEvent.DeleteTicket -> deleteTicket(event.ticketId)
+            is LottoResultEvent.CheckWinning -> checkWinning(event.ticketId)
+            is LottoResultEvent.ToggleBottomSheet -> toggleBottomSheet()
         }
     }
 
@@ -149,5 +177,89 @@ class LottoResultViewModel @Inject constructor(
                     _effect.send(LottoResultEffect.ShowError(errorMessage))
                 }
         }
+    }
+
+    private fun openQrScan() {
+        viewModelScope.launch {
+            _effect.send(LottoResultEffect.NavigateToQrScan)
+        }
+    }
+
+    private fun openManualInput() {
+        viewModelScope.launch {
+            _effect.send(LottoResultEffect.NavigateToManualInput)
+        }
+    }
+
+    private fun saveQrTickets(round: Int, games: List<List<Int>>) {
+        viewModelScope.launch {
+            val tickets = games.mapIndexed { index, numbers ->
+                UserLottoTicket(
+                    round = round,
+                    numbers = numbers.sorted(),
+                    gameType = GameType.AUTO,
+                    registeredDate = Date()
+                )
+            }
+
+            saveUserTicketUseCase.saveMultiple(tickets)
+                .onSuccess {
+                    _effect.send(LottoResultEffect.ShowTicketSaved(tickets.size))
+                }
+                .onFailure { e ->
+                    _effect.send(LottoResultEffect.ShowError(e.message ?: "티켓 저장 실패"))
+                }
+        }
+    }
+
+    private fun saveManualTicket(round: Int, numbers: List<Int>, isAuto: Boolean) {
+        viewModelScope.launch {
+            val ticket = UserLottoTicket(
+                round = round,
+                numbers = numbers.sorted(),
+                gameType = if (isAuto) GameType.AUTO else GameType.MANUAL,
+                registeredDate = Date()
+            )
+
+            saveUserTicketUseCase(ticket)
+                .onSuccess {
+                    _effect.send(LottoResultEffect.ShowTicketSaved(1))
+                }
+                .onFailure { e ->
+                    _effect.send(LottoResultEffect.ShowError(e.message ?: "티켓 저장 실패"))
+                }
+        }
+    }
+
+    private fun deleteTicket(ticketId: Long) {
+        viewModelScope.launch {
+            deleteUserTicketUseCase(ticketId)
+                .onFailure { e ->
+                    _effect.send(LottoResultEffect.ShowError(e.message ?: "티켓 삭제 실패"))
+                }
+        }
+    }
+
+    private fun checkWinning(ticketId: Long) {
+        viewModelScope.launch {
+            val ticket = _state.value.userTickets.find { it.id == ticketId } ?: return@launch
+
+            checkWinningUseCase(ticket.round, ticket.numbers)
+                .onSuccess { result ->
+                    val updatedTicket = ticket.copy(
+                        winningRank = result.rank,
+                        isChecked = true
+                    )
+                    updateUserTicketUseCase(updatedTicket)
+                    _effect.send(LottoResultEffect.ShowWinningResult(result.rank))
+                }
+                .onFailure { e ->
+                    _effect.send(LottoResultEffect.ShowError(e.message ?: "당첨 확인 실패"))
+                }
+        }
+    }
+
+    private fun toggleBottomSheet() {
+        _state.update { it.copy(isBottomSheetOpen = !it.isBottomSheetOpen) }
     }
 }

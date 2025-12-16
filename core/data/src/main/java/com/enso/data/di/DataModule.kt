@@ -5,7 +5,9 @@ import com.enso.data.datasource.LottoLocalDataSourceImpl
 import com.enso.data.datasource.LottoRemoteDataSource
 import com.enso.data.datasource.LottoRemoteDataSourceImpl
 import com.enso.data.repository.LottoRepositoryImpl
+import com.enso.data.repository.UserTicketRepositoryImpl
 import com.enso.domain.repository.LottoRepository
+import com.enso.domain.repository.UserTicketRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,6 +21,10 @@ interface DataModule {
     @Binds
     @Singleton
     fun bindLottoRepository(impl: LottoRepositoryImpl): LottoRepository
+
+    @Binds
+    @Singleton
+    fun bindUserTicketRepository(impl: UserTicketRepositoryImpl): UserTicketRepository
 
     @Binds
     @Singleton
