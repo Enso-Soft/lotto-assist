@@ -15,9 +15,11 @@ android {
 
 dependencies {
     implementation(project(":feature:home"))
+    implementation(project(":feature:qrscan"))
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:network"))
+    implementation(project(":core:database"))
     implementation(project(":core:util"))
     implementation(project(":core:di"))
 

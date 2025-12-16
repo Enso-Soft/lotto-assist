@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -64,6 +65,9 @@ fun LottoResultScreen(
                 is LottoResultEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
+                is LottoResultEffect.SyncCompleted -> {
+                    // 동기화 완료 처리
+                }
             }
         }
     }
@@ -95,21 +99,21 @@ private fun LottoResultContent(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = state.isLoading,
+            isRefreshing = state.isSyncing,
             onRefresh = onRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
             when {
-                state.isLoading && state.lottoResult == null -> {
+                state.isSyncing && state.lottoResults.isEmpty() -> {
                     LoadingContent()
                 }
-                state.error != null && state.lottoResult == null -> {
+                state.error != null && state.lottoResults.isEmpty() -> {
                     ErrorContent(errorMessage = state.error)
                 }
-                state.lottoResult != null -> {
-                    LottoResultDetail(lottoResult = state.lottoResult)
+                else -> {
+                    LottoResultsContent(state = state)
                 }
             }
         }
@@ -143,11 +147,45 @@ private fun ErrorContent(errorMessage: String) {
 }
 
 @Composable
+private fun LottoResultsContent(state: LottoResultUiState) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (state.isSyncing) {
+            androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        state.selectedResult?.let { result ->
+            LottoResultDetail(lottoResult = result)
+        }
+
+        if (state.lottoResults.isNotEmpty()) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                items(
+                    count = state.lottoResults.size,
+                    key = { index -> state.lottoResults[index].round }
+                ) { index ->
+                    val result = state.lottoResults[index]
+                    LottoResultListItem(
+                        result = result,
+                        isSelected = result.round == state.selectedResult?.round,
+                        onClick = { }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun LottoResultDetail(lottoResult: LottoResult) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .fillMaxWidth()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -164,6 +202,62 @@ private fun LottoResultDetail(lottoResult: LottoResult) {
         PrizeInfoCard(
             firstPrize = lottoResult.firstPrize
         )
+    }
+}
+
+@Composable
+private fun LottoResultListItem(
+    result: LottoResult,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${result.round}회",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                result.numbers.forEach { number ->
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(getLottoBallColor(number, false)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = number.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -218,40 +312,50 @@ private fun WinningNumbersCard(numbers: List<Int>, bonusNumber: Int) {
             )
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 numbers.forEach { number ->
-                    LottoBall(number = number)
+                    LottoBall(
+                        number = number,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Text(
                     text = "+",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
 
-                LottoBall(number = bonusNumber, isBonus = true)
+                LottoBall(
+                    number = bonusNumber,
+                    isBonus = true,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun LottoBall(number: Int, isBonus: Boolean = false) {
+private fun LottoBall(
+    number: Int,
+    isBonus: Boolean = false,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
-            .size(48.dp)
+        modifier = modifier
+            .aspectRatio(1f)
+            .padding(2.dp)
             .clip(CircleShape)
             .background(getLottoBallColor(number, isBonus)),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = number.toString(),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
