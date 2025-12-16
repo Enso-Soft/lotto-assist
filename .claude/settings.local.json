@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew :core:domain:build:*)",
+      "Bash(ping:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew test:*)"
+    ]
+  }
+}
