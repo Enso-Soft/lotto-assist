@@ -63,6 +63,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -71,6 +72,7 @@ import com.enso.domain.model.LottoResult
 import com.enso.domain.model.UserLottoTicket
 import com.enso.home.ui.components.LottoBall
 import com.enso.home.ui.components.ManualInputDialog
+import com.enso.home.ui.components.MediumLottoBall
 import com.enso.home.ui.components.SmallLottoBall
 import com.enso.home.ui.components.WinningBadge
 import com.enso.home.ui.theme.BackgroundLight
@@ -85,6 +87,7 @@ import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun LottoResultScreen(
     viewModel: LottoResultViewModel = hiltViewModel(),
@@ -96,6 +99,8 @@ fun LottoResultScreen(
     var showRoundBottomSheet by remember { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    var showAllTickets by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -116,15 +121,7 @@ fun LottoResultScreen(
                     snackbarHostState.showSnackbar("${effect.count}개의 번호가 저장되었습니다")
                 }
                 is LottoResultEffect.ShowWinningResult -> {
-                    val message = when (effect.rank) {
-                        1 -> "축하합니다! 1등 당첨!"
-                        2 -> "축하합니다! 2등 당첨!"
-                        3 -> "3등 당첨!"
-                        4 -> "4등 당첨!"
-                        5 -> "5등 당첨!"
-                        else -> "낙첨입니다"
-                    }
-                    snackbarHostState.showSnackbar(message)
+                    // 당첨/낙첨 스낵바 표시 안 함 (배지로 충분)
                 }
             }
         }
@@ -145,7 +142,7 @@ fun LottoResultScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "로또 홈",
+                        if (showAllTickets) "내 로또 전체보기" else "로또 홈",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -154,20 +151,35 @@ fun LottoResultScreen(
                     containerColor = BackgroundLight,
                     titleContentColor = TextMainLight
                 ),
+                navigationIcon = {
+                    if (showAllTickets) {
+                        IconButton(onClick = { showAllTickets = false }) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "닫기",
+                                tint = TextMainLight
+                            )
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(onClick = { /* 설정 */ }) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "설정",
-                            tint = TextMainLight
-                        )
+                    if (!showAllTickets) {
+                        IconButton(onClick = { /* 설정 */ }) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "설정",
+                                tint = TextMainLight
+                            )
+                        }
                     }
                 }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            BottomNavigationBar()
+            if (!showAllTickets) {
+                BottomNavigationBar()
+            }
         },
         containerColor = BackgroundLight
     ) { paddingValues ->
@@ -176,30 +188,11 @@ fun LottoResultScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // 당첨 결과 섹션
-                WinningResultSection(
-                    selectedResult = uiState.selectedResult,
-                    isLoading = uiState.isSyncing,
-                    onRoundClick = { showRoundBottomSheet = true }
-                )
-
-                // QR 스캔 / 번호 입력 버튼
-                ActionButtonsSection(
-                    onQrScanClick = { viewModel.onEvent(LottoResultEvent.OpenQrScan) },
-                    onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
-                )
-
-                // 내 로또 섹션
-                MyLottoSection(
+            if (showAllTickets) {
+                // 전체보기 화면
+                AllTicketsContent(
                     tickets = uiState.userTickets,
-                    selectedRound = uiState.selectedResult?.round,
+                    currentRound = uiState.currentRound,
                     onCheckWinning = { ticketId ->
                         viewModel.onEvent(LottoResultEvent.CheckWinning(ticketId))
                     },
@@ -207,16 +200,51 @@ fun LottoResultScreen(
                         viewModel.onEvent(LottoResultEvent.DeleteTicket(ticketId))
                     }
                 )
+            } else {
+                // 홈 화면
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // 당첨 결과 섹션
+                    WinningResultSection(
+                        selectedResult = uiState.selectedResult,
+                        isLoading = uiState.isSyncing,
+                        onRoundClick = { showRoundBottomSheet = true }
+                    )
 
-                // 지난 회차 정보
-                PastDrawsSection(
-                    results = uiState.lottoResults.take(3),
-                    onSelectResult = { result ->
-                        viewModel.onEvent(LottoResultEvent.SelectResult(result))
-                    }
-                )
+                    // QR 스캔 / 번호 입력 버튼
+                    ActionButtonsSection(
+                        onQrScanClick = { viewModel.onEvent(LottoResultEvent.OpenQrScan) },
+                        onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    // 내 로또 섹션
+                    MyLottoSection(
+                        tickets = uiState.userTickets,
+                        currentRound = uiState.currentRound,
+                        onCheckWinning = { ticketId ->
+                            viewModel.onEvent(LottoResultEvent.CheckWinning(ticketId))
+                        },
+                        onDeleteTicket = { ticketId ->
+                            viewModel.onEvent(LottoResultEvent.DeleteTicket(ticketId))
+                        },
+                        onViewAll = { showAllTickets = true }
+                    )
+
+                    // 지난 회차 정보
+                    PastDrawsSection(
+                        results = uiState.lottoResults.take(3),
+                        onSelectResult = { result ->
+                            viewModel.onEvent(LottoResultEvent.SelectResult(result))
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
@@ -345,44 +373,44 @@ private fun WinningNumbersCard(result: LottoResult) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 당첨 번호
+            // 당첨 번호 + 보너스 (한 줄에 표시)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                result.numbers.forEach { number ->
-                    LottoBall(number = number)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 보너스 번호
-            Row(
                 horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
+                // 당첨 번호 6개
+                result.numbers.forEach { number ->
+                    MediumLottoBall(number = number)
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+
+                // 구분선
                 Text(
                     text = "+",
-                    fontSize = 20.sp,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextSubLight,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(horizontal = 4.dp)
                 )
+
+                // 보너스 번호 (텍스트는 하단에)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LottoBall(number = result.bonusNumber)
+                    MediumLottoBall(number = result.bonusNumber)
                     Text(
                         text = "보너스",
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         color = TextSubLight,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 1등 당첨 정보
             Column(
@@ -480,9 +508,10 @@ private fun ActionButtonsSection(
 @Composable
 private fun MyLottoSection(
     tickets: List<UserLottoTicket>,
-    selectedRound: Int?,
+    currentRound: Int,
     onCheckWinning: (Long) -> Unit,
-    onDeleteTicket: (Long) -> Unit
+    onDeleteTicket: (Long) -> Unit,
+    onViewAll: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -501,7 +530,8 @@ private fun MyLottoSection(
             Text(
                 "전체보기",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSubLight
+                color = TextSubLight,
+                modifier = Modifier.clickable(onClick = onViewAll)
             )
         }
 
@@ -523,6 +553,7 @@ private fun MyLottoSection(
                     tickets.take(3).forEach { ticket ->
                         TicketItem(
                             ticket = ticket,
+                            currentRound = currentRound,
                             onCheckWinning = { onCheckWinning(ticket.id) },
                             onDelete = { onDeleteTicket(ticket.id) }
                         )
@@ -559,9 +590,19 @@ private fun EmptyTicketCard() {
 @Composable
 private fun TicketItem(
     ticket: UserLottoTicket,
+    currentRound: Int,
     onCheckWinning: () -> Unit,
     onDelete: () -> Unit
 ) {
+    // 추첨이 완료된 회차이고 아직 확인하지 않았다면 자동으로 당첨 확인 실행
+    val isDrawComplete = ticket.round <= currentRound
+
+    LaunchedEffect(ticket.id, ticket.isChecked, isDrawComplete) {
+        if (isDrawComplete && !ticket.isChecked) {
+            onCheckWinning()
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -581,7 +622,8 @@ private fun TicketItem(
                         fontSize = 18.sp,
                         color = TextMainLight
                     )
-                    if (ticket.isChecked) {
+                    // 추첨 완료된 회차면 배지 표시 (자동 확인됨)
+                    if (isDrawComplete) {
                         WinningBadge(rank = ticket.winningRank)
                     }
                 }
@@ -609,16 +651,6 @@ private fun TicketItem(
                     color = TextSubLight,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-            }
-        }
-
-        if (!ticket.isChecked) {
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = onCheckWinning,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("당첨 확인")
             }
         }
     }
@@ -837,4 +869,130 @@ private fun formatDrawDate(date: Date): String {
 private fun formatTicketDate(date: Date): String {
     val formatter = SimpleDateFormat("yyyy.MM.dd 등록", Locale.KOREA)
     return formatter.format(date)
+}
+
+@Composable
+private fun AllTicketsContent(
+    tickets: List<UserLottoTicket>,
+    currentRound: Int,
+    onCheckWinning: (Long) -> Unit,
+    onDeleteTicket: (Long) -> Unit
+) {
+    if (tickets.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요",
+                textAlign = TextAlign.Center,
+                color = TextSubLight,
+                fontSize = 14.sp
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 통계 헤더
+            item {
+                AllTicketsHeader(
+                    totalCount = tickets.size,
+                    winningCount = tickets.count { it.winningRank in 1..5 }
+                )
+            }
+
+            // 전체 티켓 목록
+            items(tickets.size) { index ->
+                val ticket = tickets[index]
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = CardLight),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        TicketItem(
+                            ticket = ticket,
+                            currentRound = currentRound,
+                            onCheckWinning = { onCheckWinning(ticket.id) },
+                            onDelete = { onDeleteTicket(ticket.id) }
+                        )
+                    }
+                }
+            }
+
+            // 하단 여백
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AllTicketsHeader(
+    totalCount: Int,
+    winningCount: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "$totalCount",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Primary
+                )
+                Text(
+                    text = "전체 번호",
+                    fontSize = 12.sp,
+                    color = TextSubLight,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(50.dp)
+                    .background(TextSubLight.copy(alpha = 0.2f))
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "$winningCount",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = com.enso.home.ui.theme.WinningGreen
+                )
+                Text(
+                    text = "당첨 (1-5등)",
+                    fontSize = 12.sp,
+                    color = TextSubLight,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
 }
