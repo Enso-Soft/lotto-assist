@@ -22,8 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,6 +58,48 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+
+private data class QrBoxMetrics(
+    val centerX: Float,
+    val centerY: Float,
+    val width: Float,
+    val height: Float
+) {
+    val area: Float = width * height
+    val size: Float = maxOf(width, height)
+}
+
+private fun QrCodeBounds.toMetricsOrNull(): QrBoxMetrics? {
+    if (cornerPoints.isEmpty()) return null
+    val minX = cornerPoints.minOf { it.x }
+    val maxX = cornerPoints.maxOf { it.x }
+    val minY = cornerPoints.minOf { it.y }
+    val maxY = cornerPoints.maxOf { it.y }
+    val width = (maxX - minX).coerceAtLeast(1f)
+    val height = (maxY - minY).coerceAtLeast(1f)
+    return QrBoxMetrics(
+        centerX = (minX + maxX) / 2f,
+        centerY = (minY + maxY) / 2f,
+        width = width,
+        height = height
+    )
+}
+
+private fun isSimilarBounds(
+    previous: QrBoxMetrics,
+    current: QrBoxMetrics,
+    centerMoveThresholdRatio: Float = 0.05f, // QR 크기 대비 5%
+    areaChangeThresholdRatio: Float = 0.10f  // 10%
+): Boolean {
+    val dx = previous.centerX - current.centerX
+    val dy = previous.centerY - current.centerY
+    val centerDistance = kotlin.math.sqrt(dx * dx + dy * dy)
+    val centerThreshold = previous.size * centerMoveThresholdRatio
+
+    val areaDeltaRatio = kotlin.math.abs(current.area - previous.area) / previous.area
+
+    return centerDistance < centerThreshold && areaDeltaRatio < areaChangeThresholdRatio
+}
 
 /**
  * QR 스캐너 오버레이 스타일 상수
@@ -94,10 +139,24 @@ fun QrScanScreen(
                 is QrScanEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is QrScanEffect.ScanSuccess -> {
-                    onScanSuccess(effect.ticketInfo)
-                }
             }
+        }
+    }
+
+    // 성공 시: 화면은 유지하고 하단 스낵바 액션으로 "당첨 여부 확인"을 진행
+    LaunchedEffect(uiState.scannedResult) {
+        val ticketInfo = uiState.scannedResult ?: return@LaunchedEffect
+
+        val result = snackbarHostState.showSnackbar(
+            message = "QR 코드 인식 완료",
+            actionLabel = "로또 당첨 여부 확인하기",
+            withDismissAction = true,
+            duration = SnackbarDuration.Indefinite
+        )
+
+        when (result) {
+            SnackbarResult.ActionPerformed -> onScanSuccess(ticketInfo)
+            SnackbarResult.Dismissed -> viewModel.onEvent(QrScanEvent.ResetAfterSuccess)
         }
     }
 
@@ -150,9 +209,8 @@ fun QrScanScreen(
                     }
                 },
                 onBoundsUpdate = { bounds ->
-                    if (!uiState.isSuccess) {
-                        viewModel.onEvent(QrScanEvent.UpdateDetectedBounds(bounds))
-                    }
+                    // 성공 후에도 QR 위치가 바뀌면 박스가 따라가야 하므로 bounds 업데이트는 항상 반영
+                    viewModel.onEvent(QrScanEvent.UpdateDetectedBounds(bounds))
                 }
             )
 
@@ -160,7 +218,8 @@ fun QrScanScreen(
             uiState.detectedBounds?.let { bounds ->
                 QrOverlay(
                     bounds = bounds,
-                    isSuccess = uiState.isSuccess
+                    isSuccess = uiState.isSuccess,
+                    isCurrentlyDetected = uiState.isCurrentlyDetected
                 )
             }
 
@@ -196,28 +255,91 @@ fun QrScanScreen(
 @Composable
 private fun QrOverlay(
     bounds: QrCodeBounds,
-    isSuccess: Boolean
+    isSuccess: Boolean,
+    isCurrentlyDetected: Boolean
 ) {
-    var animationTrigger by remember { mutableStateOf(0) }
     var animationStarted by remember { mutableStateOf(false) }
+    var shouldAnimateScale by remember { mutableStateOf(true) }
+    var previousMetrics by remember { mutableStateOf<QrBoxMetrics?>(null) }
+    var previousWasDetected by remember { mutableStateOf(false) }
 
-    LaunchedEffect(bounds) {
-        animationStarted = false
-        animationTrigger++
-        kotlinx.coroutines.delay(50)
-        animationStarted = true
+    // 소스 이미지 좌표계에서 corner point를 부드럽게 이동시키기 위한 state
+    val animatedSourceCorners = remember { mutableStateListOf<Offset>() }
+
+    LaunchedEffect(bounds, isCurrentlyDetected) {
+        if (!isCurrentlyDetected) {
+            previousWasDetected = false
+            return@LaunchedEffect
+        }
+
+        val targetSourceCorners = bounds.cornerPoints.take(4).map { Offset(it.x, it.y) }
+        val currentMetrics = bounds.toMetricsOrNull()
+        val prevMetrics = previousMetrics
+
+        val isFirstOrReDetected = !previousWasDetected
+        val isMajorChange = when {
+            prevMetrics == null || currentMetrics == null -> true
+            else -> !isSimilarBounds(previous = prevMetrics, current = currentMetrics)
+        }
+
+        shouldAnimateScale = isFirstOrReDetected || isMajorChange
+
+        // 이전 메트릭 갱신
+        previousMetrics = currentMetrics
+        previousWasDetected = true
+
+        // corner 애니메이션 초기화/갱신
+        if (animatedSourceCorners.size != 4) {
+            animatedSourceCorners.clear()
+            animatedSourceCorners.addAll(targetSourceCorners)
+        } else if (isFirstOrReDetected) {
+            // 재인식 시에는 점프(스케일 애니메이션으로 "등장" 느낌)
+            for (i in 0 until 4) animatedSourceCorners[i] = targetSourceCorners[i]
+        } else {
+            // 위치가 부드럽게 이동하도록 0.25초 tween
+            val startCorners = animatedSourceCorners.toList()
+            val steps = 12
+            val durationMillis = 250
+            for (step in 1..steps) {
+                val t = step.toFloat() / steps.toFloat()
+                val eased = androidx.compose.animation.core.FastOutSlowInEasing.transform(t)
+                for (i in 0 until 4) {
+                    val start = startCorners[i]
+                    val target = targetSourceCorners[i]
+                    animatedSourceCorners[i] = Offset(
+                        x = start.x + (target.x - start.x) * eased,
+                        y = start.y + (target.y - start.y) * eased
+                    )
+                }
+                kotlinx.coroutines.delay((durationMillis / steps).toLong())
+            }
+        }
+
+        // 스케일 애니메이션 트리거
+        if (shouldAnimateScale) {
+            animationStarted = false
+            kotlinx.coroutines.delay(50)
+            animationStarted = true
+        } else {
+            animationStarted = true
+        }
     }
 
     val animationProgress by animateFloatAsState(
         targetValue = if (animationStarted) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = QrOverlayStyle.animationDuration,
-            easing = androidx.compose.animation.core.FastOutSlowInEasing
-        ),
+        animationSpec = if (shouldAnimateScale) {
+            tween(
+                durationMillis = QrOverlayStyle.animationDuration,
+                easing = androidx.compose.animation.core.FastOutSlowInEasing
+            )
+        } else {
+            tween(durationMillis = 0)
+        },
         label = "qr_box_animation"
     )
 
     val cornerColor = if (isSuccess) QrOverlayStyle.successColor else QrOverlayStyle.defaultColor
+    val overlayAlpha = if (shouldAnimateScale) animationProgress else 1f
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val screenWidth = size.width
@@ -252,13 +374,25 @@ private fun QrOverlay(
                 )
             }
 
-            val transformedCorners = bounds.cornerPoints.map { transformPoint(it) }
+            val sourceCornersForDraw = if (animatedSourceCorners.size == 4) {
+                animatedSourceCorners.map { Offset(it.x, it.y) }
+            } else {
+                bounds.cornerPoints.take(4).map { Offset(it.x, it.y) }
+            }
+
+            val transformedCorners = sourceCornersForDraw.map { src ->
+                transformPoint(PointF(src.x, src.y))
+            }
 
             val centerX = transformedCorners.map { it.x }.average().toFloat()
             val centerY = transformedCorners.map { it.y }.average().toFloat()
 
             val initialScale = QrOverlayStyle.initialScaleRatio
-            val currentScale = initialScale - (initialScale - 1f) * animationProgress
+            val currentScale = if (shouldAnimateScale) {
+                initialScale - (initialScale - 1f) * animationProgress
+            } else {
+                1f
+            }
 
             val animatedCorners = transformedCorners.map { corner ->
                 val dx = (corner.x - centerX) * currentScale
@@ -308,7 +442,7 @@ private fun QrOverlay(
                         corner.y + prevUnitY * cornerRadius
                     )
                     // 둥근 코너
-                    quadraticBezierTo(
+                    quadraticTo(
                         corner.x,
                         corner.y,
                         corner.x + nextUnitX * cornerRadius,
@@ -323,7 +457,7 @@ private fun QrOverlay(
                 // 메인 라인
                 drawPath(
                     path = lPath,
-                    color = cornerColor.copy(alpha = animationProgress),
+                    color = cornerColor.copy(alpha = overlayAlpha),
                     style = Stroke(
                         width = QrOverlayStyle.cornerStrokeWidth,
                         cap = androidx.compose.ui.graphics.StrokeCap.Round,
@@ -338,8 +472,9 @@ private fun QrOverlay(
             }
 
             // 성공 시 체크마크 (iOS 스타일)
-            if (isSuccess && animationProgress > 0.5f) {
-                val checkAlpha = ((animationProgress - 0.5f) * 2f).coerceIn(0f, 1f)
+            val checkProgress = if (shouldAnimateScale) animationProgress else 1f
+            if (isSuccess && checkProgress > 0.5f) {
+                val checkAlpha = ((checkProgress - 0.5f) * 2f).coerceIn(0f, 1f)
                 val checkSize = qrWidth * 0.32f
 
                 val checkPath = Path().apply {

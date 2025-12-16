@@ -27,21 +27,55 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
         when (event) {
             is QrScanEvent.StartScan -> startScan()
             is QrScanEvent.StopScan -> stopScan()
+            is QrScanEvent.ResetAfterSuccess -> resetAfterSuccess()
             is QrScanEvent.ProcessQrCode -> processQrCode(event.content, event.bounds)
             is QrScanEvent.UpdateDetectedBounds -> updateDetectedBounds(event.bounds)
         }
     }
 
     private fun startScan() {
-        _state.update { it.copy(isScanning = true, error = null, detectedBounds = null) }
+        _state.update {
+            it.copy(
+                isScanning = true,
+                error = null,
+                detectedBounds = null,
+                isCurrentlyDetected = false
+            )
+        }
     }
 
     private fun stopScan() {
-        _state.update { it.copy(isScanning = false, detectedBounds = null) }
+        _state.update {
+            it.copy(
+                isScanning = false,
+                detectedBounds = null,
+                isCurrentlyDetected = false
+            )
+        }
+    }
+
+    private fun resetAfterSuccess() {
+        _state.update {
+            it.copy(
+                isScanning = true,
+                scannedResult = null,
+                detectedBounds = null,
+                isCurrentlyDetected = false,
+                isSuccess = false,
+                error = null
+            )
+        }
     }
 
     private fun updateDetectedBounds(bounds: QrCodeBounds?) {
-        _state.update { it.copy(detectedBounds = bounds) }
+        _state.update {
+            if (bounds == null) {
+                // 더 이상 인식되지 않더라도 마지막 박스 위치는 유지
+                it.copy(isCurrentlyDetected = false)
+            } else {
+                it.copy(detectedBounds = bounds, isCurrentlyDetected = true)
+            }
+        }
     }
 
     private fun processQrCode(content: String, bounds: QrCodeBounds) {
@@ -49,19 +83,16 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
             val ticketInfo = LottoQrParser.parse(content)
             Log.d("whk__", "ticketInfo : $ticketInfo")
             if (ticketInfo != null) {
-                // 성공 상태로 변경
+                // 성공 상태로 변경 (자동 종료하지 않고 상태만 설정)
                 _state.update {
                     it.copy(
                         scannedResult = ticketInfo,
                         isScanning = false,
                         detectedBounds = bounds,
-                        isSuccess = true
+                        isSuccess = true,
+                        error = null
                     )
                 }
-
-                // 1.5초 딜레이 후 성공 Effect 전송
-                kotlinx.coroutines.delay(1500)
-                _effect.send(QrScanEffect.ScanSuccess(ticketInfo))
             } else {
                 _state.update {
                     it.copy(

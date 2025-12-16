@@ -14,6 +14,7 @@ data class QrScanUiState(
     val isScanning: Boolean = false,
     val scannedResult: LottoTicketInfo? = null,
     val detectedBounds: QrCodeBounds? = null,
+    val isCurrentlyDetected: Boolean = false,
     val isSuccess: Boolean = false,
     val error: String? = null
 )
@@ -21,11 +22,11 @@ data class QrScanUiState(
 sealed class QrScanEvent {
     data object StartScan : QrScanEvent()
     data object StopScan : QrScanEvent()
+    data object ResetAfterSuccess : QrScanEvent()
     data class ProcessQrCode(val content: String, val bounds: QrCodeBounds) : QrScanEvent()
     data class UpdateDetectedBounds(val bounds: QrCodeBounds?) : QrScanEvent()
 }
 
 sealed class QrScanEffect {
     data class ShowError(val message: String) : QrScanEffect()
-    data class ScanSuccess(val ticketInfo: LottoTicketInfo) : QrScanEffect()
 }
