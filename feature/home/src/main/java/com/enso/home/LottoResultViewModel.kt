@@ -6,6 +6,7 @@ import com.enso.domain.model.GameType
 import com.enso.domain.model.LottoGame
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
+import com.enso.domain.model.TicketSortType
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
@@ -19,6 +20,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -77,7 +79,10 @@ class LottoResultViewModel @Inject constructor(
 
     private fun observeUserTickets() {
         viewModelScope.launch {
-            getLottoTicketsUseCase()
+            _state
+                .flatMapLatest { state ->
+                    getLottoTicketsUseCase(state.ticketSortType)
+                }
                 .collect { tickets ->
                     _state.update { it.copy(tickets = tickets) }
                 }
@@ -116,6 +121,7 @@ class LottoResultViewModel @Inject constructor(
             is LottoResultEvent.DeleteTicket -> deleteTicket(event.ticketId)
             is LottoResultEvent.CheckWinning -> checkWinning(event.ticketId)
             is LottoResultEvent.ToggleBottomSheet -> toggleBottomSheet()
+            is LottoResultEvent.ChangeSortType -> changeSortType(event.sortType)
         }
     }
 
@@ -275,5 +281,9 @@ class LottoResultViewModel @Inject constructor(
 
     private fun toggleBottomSheet() {
         _state.update { it.copy(isBottomSheetOpen = !it.isBottomSheetOpen) }
+    }
+
+    private fun changeSortType(sortType: TicketSortType) {
+        _state.update { it.copy(ticketSortType = sortType) }
     }
 }

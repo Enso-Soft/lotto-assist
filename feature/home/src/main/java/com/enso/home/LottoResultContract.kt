@@ -2,6 +2,7 @@ package com.enso.home
 
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
+import com.enso.domain.model.TicketSortType
 
 data class LottoResultUiState(
     val isLoading: Boolean = false,
@@ -11,7 +12,8 @@ data class LottoResultUiState(
     val tickets: List<LottoTicket> = emptyList(),
     val error: String? = null,
     val currentRound: Int = 0,
-    val isBottomSheetOpen: Boolean = false
+    val isBottomSheetOpen: Boolean = false,
+    val ticketSortType: TicketSortType = TicketSortType.DEFAULT
 )
 
 sealed class LottoResultEvent {
@@ -27,6 +29,7 @@ sealed class LottoResultEvent {
     data class DeleteTicket(val ticketId: Long) : LottoResultEvent()
     data class CheckWinning(val ticketId: Long) : LottoResultEvent()
     data object ToggleBottomSheet : LottoResultEvent()
+    data class ChangeSortType(val sortType: TicketSortType) : LottoResultEvent()
 }
 
 sealed class LottoResultEffect {

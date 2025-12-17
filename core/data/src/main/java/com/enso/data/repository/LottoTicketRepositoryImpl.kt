@@ -6,6 +6,7 @@ import com.enso.data.mapper.toDomain
 import com.enso.data.mapper.toTicketEntity
 import com.enso.di.IoDispatcher
 import com.enso.domain.model.LottoTicket
+import com.enso.domain.model.TicketSortType
 import com.enso.domain.repository.LottoTicketRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -37,8 +38,8 @@ class LottoTicketRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getAllTickets(): Flow<List<LottoTicket>> {
-        return localDataSource.getAllTickets().map { ticketEntities ->
+    override fun getAllTickets(sortType: TicketSortType): Flow<List<LottoTicket>> {
+        return localDataSource.getAllTickets(sortType).map { ticketEntities ->
             ticketEntities.map { ticketEntity ->
                 val games = localDataSource.getGamesByTicketId(ticketEntity.ticketId)
                 ticketEntity.toDomain(games)

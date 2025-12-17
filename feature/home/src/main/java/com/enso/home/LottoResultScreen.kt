@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -70,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
+import com.enso.domain.model.TicketSortType
 import com.enso.home.ui.components.HighlightedSmallLottoBall
 import com.enso.home.ui.components.LottoBall
 import com.enso.home.ui.components.ManualInputDialog
@@ -196,11 +198,15 @@ fun LottoResultScreen(
                     tickets = uiState.tickets,
                     lottoResults = uiState.lottoResults,
                     currentRound = uiState.currentRound,
+                    currentSortType = uiState.ticketSortType,
                     onCheckWinning = { ticketId ->
                         viewModel.onEvent(LottoResultEvent.CheckWinning(ticketId))
                     },
                     onDeleteTicket = { ticketId ->
                         viewModel.onEvent(LottoResultEvent.DeleteTicket(ticketId))
+                    },
+                    onSortTypeChange = { sortType ->
+                        viewModel.onEvent(LottoResultEvent.ChangeSortType(sortType))
                     }
                 )
             } else {
@@ -1015,9 +1021,13 @@ private fun AllTicketsContent(
     tickets: List<LottoTicket>,
     lottoResults: List<LottoResult>,
     currentRound: Int,
+    currentSortType: TicketSortType,
     onCheckWinning: (Long) -> Unit,
-    onDeleteTicket: (Long) -> Unit
+    onDeleteTicket: (Long) -> Unit,
+    onSortTypeChange: (TicketSortType) -> Unit
 ) {
+    var showSortBottomSheet by remember { mutableStateOf(false) }
+
     if (tickets.isEmpty()) {
         Box(
             modifier = Modifier
@@ -1049,6 +1059,14 @@ private fun AllTicketsContent(
                 )
             }
 
+            // 정렬 선택 버튼
+            item {
+                SortButton(
+                    currentSortType = currentSortType,
+                    onClick = { showSortBottomSheet = true }
+                )
+            }
+
             // 전체 티켓 목록
             items(tickets.size) { index ->
                 val ticket = tickets[index]
@@ -1061,6 +1079,17 @@ private fun AllTicketsContent(
                 )
             }
         }
+    }
+
+    if (showSortBottomSheet) {
+        SortSelectionBottomSheet(
+            currentSortType = currentSortType,
+            onSelectSortType = { sortType ->
+                onSortTypeChange(sortType)
+                showSortBottomSheet = false
+            },
+            onDismiss = { showSortBottomSheet = false }
+        )
     }
 }
 
@@ -1120,6 +1149,120 @@ private fun AllTicketsHeader(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SortButton(
+    currentSortType: TicketSortType,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = CardLight),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "정렬",
+                    fontSize = 14.sp,
+                    color = TextSubLight
+                )
+                Text(
+                    text = currentSortType.displayName,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Primary
+                )
+            }
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = "정렬 선택",
+                tint = TextSubLight,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortSelectionBottomSheet(
+    currentSortType: TicketSortType,
+    onSelectSortType: (TicketSortType) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = CardLight
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Text(
+                "정렬 기준",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextMainLight,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            TicketSortType.values().forEach { sortType ->
+                Card(
+                    onClick = { onSelectSortType(sortType) },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (sortType == currentSortType) {
+                            Primary.copy(alpha = 0.1f)
+                        } else {
+                            CardLight
+                        }
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            sortType.displayName,
+                            fontWeight = if (sortType == currentSortType) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 16.sp,
+                            color = if (sortType == currentSortType) Primary else TextMainLight
+                        )
+                        if (sortType == currentSortType) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = "선택됨",
+                                tint = Primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

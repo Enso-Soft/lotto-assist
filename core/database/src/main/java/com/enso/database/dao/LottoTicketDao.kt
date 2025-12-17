@@ -15,8 +15,17 @@ interface LottoTicketDao {
     @Query("DELETE FROM lotto_tickets WHERE ticketId = :ticketId")
     suspend fun delete(ticketId: Long)
 
+    @Query("SELECT * FROM lotto_tickets ORDER BY registeredDate DESC")
+    fun getAllTicketsByRegisteredDateDesc(): Flow<List<LottoTicketEntity>>
+
+    @Query("SELECT * FROM lotto_tickets ORDER BY registeredDate ASC")
+    fun getAllTicketsByRegisteredDateAsc(): Flow<List<LottoTicketEntity>>
+
     @Query("SELECT * FROM lotto_tickets ORDER BY round DESC, registeredDate DESC")
-    fun getAllTickets(): Flow<List<LottoTicketEntity>>
+    fun getAllTicketsByRoundDesc(): Flow<List<LottoTicketEntity>>
+
+    @Query("SELECT * FROM lotto_tickets ORDER BY round ASC, registeredDate DESC")
+    fun getAllTicketsByRoundAsc(): Flow<List<LottoTicketEntity>>
 
     @Query("SELECT * FROM lotto_tickets WHERE round = :round ORDER BY registeredDate DESC")
     fun getTicketsByRound(round: Int): Flow<List<LottoTicketEntity>>

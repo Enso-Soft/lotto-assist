@@ -4,6 +4,7 @@ import com.enso.database.dao.LottoGameDao
 import com.enso.database.dao.LottoTicketDao
 import com.enso.database.entity.LottoGameEntity
 import com.enso.database.entity.LottoTicketEntity
+import com.enso.domain.model.TicketSortType
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -11,7 +12,7 @@ interface LottoTicketLocalDataSource {
     suspend fun insertTicket(ticket: LottoTicketEntity): Long
     suspend fun insertGames(games: List<LottoGameEntity>)
     suspend fun deleteTicket(ticketId: Long)
-    fun getAllTickets(): Flow<List<LottoTicketEntity>>
+    fun getAllTickets(sortType: TicketSortType = TicketSortType.DEFAULT): Flow<List<LottoTicketEntity>>
     fun getTicketsByRound(round: Int): Flow<List<LottoTicketEntity>>
     suspend fun getTicketById(ticketId: Long): LottoTicketEntity?
     suspend fun getGamesByTicketId(ticketId: Long): List<LottoGameEntity>
@@ -35,8 +36,13 @@ class LottoTicketLocalDataSourceImpl @Inject constructor(
         ticketDao.delete(ticketId)
     }
 
-    override fun getAllTickets(): Flow<List<LottoTicketEntity>> {
-        return ticketDao.getAllTickets()
+    override fun getAllTickets(sortType: TicketSortType): Flow<List<LottoTicketEntity>> {
+        return when (sortType) {
+            TicketSortType.REGISTERED_DATE_DESC -> ticketDao.getAllTicketsByRegisteredDateDesc()
+            TicketSortType.REGISTERED_DATE_ASC -> ticketDao.getAllTicketsByRegisteredDateAsc()
+            TicketSortType.ROUND_DESC -> ticketDao.getAllTicketsByRoundDesc()
+            TicketSortType.ROUND_ASC -> ticketDao.getAllTicketsByRoundAsc()
+        }
     }
 
     override fun getTicketsByRound(round: Int): Flow<List<LottoTicketEntity>> {
