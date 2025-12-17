@@ -681,58 +681,41 @@ private fun TicketCard(
                             color = Primary.copy(alpha = 0.05f),
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
-                    // 당첨번호
+                    // 당첨 번호 + 보너스 (가운데 정렬)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "당첨번호",
-                            fontSize = 11.sp,
-                            color = TextSubLight,
-                            modifier = Modifier.width(48.dp)
-                        )
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            lottoResult.numbers.forEach { number ->
-                                TinyLottoBall(number = number)
-                            }
-                            Text(
-                                text = "+",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextSubLight
-                            )
-                            TinyLottoBall(number = lottoResult.bonusNumber)
+                        // 당첨 번호 6개
+                        lottoResult.numbers.forEach { number ->
+                            SmallLottoBall(number = number)
+                            Spacer(modifier = Modifier.width(3.dp))
                         }
+
+                        // 구분선
+                        Text(
+                            text = "+",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSubLight,
+                            modifier = Modifier.padding(horizontal = 3.dp)
+                        )
+
+                        // 보너스 번호
+                        SmallLottoBall(number = lottoResult.bonusNumber)
                     }
 
-                    // 1등 당첨금
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "1등 당첨금",
-                            fontSize = 11.sp,
-                            color = TextSubLight,
-                            modifier = Modifier.width(48.dp)
-                        )
-                        Text(
-                            formatPrizeAmount(lottoResult.firstPrize.winAmount),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Primary
-                        )
-                    }
+                    // 당첨금 (가운데 정렬, 문구 없음)
+                    Text(
+                        text = formatPrizeAmount(lottoResult.firstPrize.winAmount),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Primary
+                    )
                 }
             }
 
