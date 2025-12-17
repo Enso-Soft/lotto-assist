@@ -658,7 +658,7 @@ private fun TicketCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        formatDrawDate(ticket.registeredDate),
+                        "${formatDrawDate(ticket.registeredDate)} 등록",
                         fontSize = 11.sp,
                         color = TextSubLight
                     )
