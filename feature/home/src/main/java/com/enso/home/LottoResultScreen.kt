@@ -697,7 +697,8 @@ private fun TicketCard(
                             modifier = Modifier.width(48.dp)
                         )
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             lottoResult.numbers.forEach { number ->
@@ -707,8 +708,7 @@ private fun TicketCard(
                                 text = "+",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextSubLight,
-                                modifier = Modifier.padding(horizontal = 2.dp)
+                                color = TextSubLight
                             )
                             TinyLottoBall(number = lottoResult.bonusNumber)
                         }
