@@ -566,17 +566,12 @@ private fun MyLottoSection(
             EmptyTicketCard()
         } else {
             val pagerState = rememberPagerState(pageCount = { tickets.size })
-            // 가장 큰 게임 수를 기준으로 높이 계산
-            val maxGames = tickets.maxOfOrNull { it.games.size } ?: 5
-            val baseHeight = 150.dp // 헤더 + 당첨번호 정보 + 패딩
-            val gameHeight = 38.dp // 게임 1개당 높이
-            val cardHeight = baseHeight + (gameHeight * maxGames)
 
             HorizontalPager(
                 state = pagerState,
                 contentPadding = PaddingValues(horizontal = 40.dp),
                 pageSpacing = 12.dp,
-                modifier = Modifier.height(cardHeight)
+                modifier = Modifier
             ) { page ->
                 val ticket = tickets[page]
                 TicketCard(
@@ -744,7 +739,9 @@ private fun TicketCard(
             // 게임 목록
             ticket.games.forEach { game ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -757,16 +754,29 @@ private fun TicketCard(
                         modifier = Modifier.width(16.dp)
                     )
 
-                    // 당첨 배지
-                    if (isDrawComplete && game.winningRank > 0) {
-                        WinningBadge(rank = game.winningRank)
+                    // 당첨 배지 + 게임 타입 (세로로 배치)
+                    Column(
+                        modifier = Modifier.width(25.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        // 당첨/낙첨 배지
+                        if (isDrawComplete && game.winningRank > 0) {
+                            WinningBadge(rank = game.winningRank)
+                        }
+                        // 자동/수동
+                        Text(
+                            game.gameType.displayName,
+                            fontSize = 12.sp,
+                            color = TextSubLight
+                        )
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     // 번호들 (당첨번호가 있으면 매칭된 번호만 하이라이트)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         if (lottoResult != null && isDrawComplete) {
                             game.numbers.forEach { number ->
@@ -781,15 +791,6 @@ private fun TicketCard(
                             }
                         }
                     }
-
-                    // 게임 타입
-                    Text(
-                        game.gameType.displayName,
-                        fontSize = 10.sp,
-                        color = TextSubLight,
-                        modifier = Modifier.width(28.dp),
-                        textAlign = TextAlign.End
-                    )
                 }
             }
         }

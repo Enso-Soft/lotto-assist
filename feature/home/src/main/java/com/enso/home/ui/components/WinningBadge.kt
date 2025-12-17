@@ -1,6 +1,7 @@
 package com.enso.home.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -19,11 +20,11 @@ fun WinningBadge(
     modifier: Modifier = Modifier
 ) {
     val (text, backgroundColor, textColor) = when (rank) {
-        1 -> Triple("1등 당첨", WinningGreen, Color.White)
-        2 -> Triple("2등 당첨", WinningGreen, Color.White)
-        3 -> Triple("3등 당첨", WinningGreen, Color.White)
-        4 -> Triple("4등 당첨", WinningGreen.copy(alpha = 0.8f), Color.White)
-        5 -> Triple("5등 당첨", WinningGreen.copy(alpha = 0.6f), Color.White)
+        1 -> Triple("1등", WinningGreen, Color.White)
+        2 -> Triple("2등", WinningGreen, Color.White)
+        3 -> Triple("3등", WinningGreen, Color.White)
+        4 -> Triple("4등", WinningGreen.copy(alpha = 0.8f), Color.White)
+        5 -> Triple("5등", WinningGreen.copy(alpha = 0.6f), Color.White)
         else -> Triple("낙첨", LosingRed.copy(alpha = 0.15f), LosingRed)
     }
 
@@ -31,9 +32,9 @@ fun WinningBadge(
         text = text,
         modifier = modifier
             .background(backgroundColor, RoundedCornerShape(4.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-        fontSize = 10.sp,
+            .padding(horizontal = 4.dp, vertical = 1.dp),
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = textColor
+        color = textColor,
     )
 }

@@ -57,8 +57,8 @@ fun SmallLottoBall(
     LottoBall(
         number = number,
         modifier = modifier,
-        size = 24.dp,
-        fontSize = 11.sp
+        size = 26.dp,
+        fontSize = 12.sp
     )
 }
 
@@ -102,7 +102,7 @@ fun HighlightedSmallLottoBall(
 
     Box(
         modifier = modifier
-            .size(24.dp)
+            .size(26.dp)
             .clip(CircleShape)
             .background(backgroundColor)
             .border(
@@ -115,7 +115,7 @@ fun HighlightedSmallLottoBall(
         Text(
             text = number.toString(),
             style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = if (isMatched) FontWeight.Bold else FontWeight.Normal,
                 color = if (isMatched) Color.White else Color.DarkGray
             )
