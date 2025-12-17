@@ -1,11 +1,13 @@
 package com.enso.qrscan
 
 import android.util.Log
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enso.qrscan.parser.LottoQrParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,8 +30,10 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
             is QrScanEvent.StartScan -> startScan()
             is QrScanEvent.StopScan -> stopScan()
             is QrScanEvent.ResetAfterSuccess -> resetAfterSuccess()
+            is QrScanEvent.ToggleFlash -> toggleFlash()
             is QrScanEvent.ProcessQrCode -> processQrCode(event.content, event.bounds)
             is QrScanEvent.UpdateDetectedBounds -> updateDetectedBounds(event.bounds)
+            is QrScanEvent.RequestFocus -> requestFocus(event.x, event.y)
         }
     }
 
@@ -64,6 +68,12 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
                 isSuccess = false,
                 error = null
             )
+        }
+    }
+
+    private fun toggleFlash() {
+        _state.update {
+            it.copy(isFlashEnabled = !it.isFlashEnabled)
         }
     }
 
@@ -103,6 +113,22 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
                     )
                 }
                 _effect.send(QrScanEffect.ShowError("유효하지 않은 로또 QR 코드입니다"))
+            }
+        }
+    }
+
+    private fun requestFocus(x: Float, y: Float) {
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    focusPoint = Offset(x, y),
+                    isFocusing = true
+                )
+            }
+            // 0.3초 후 포커스 애니메이션 종료
+            delay(300L)
+            _state.update {
+                it.copy(isFocusing = false)
             }
         }
     }

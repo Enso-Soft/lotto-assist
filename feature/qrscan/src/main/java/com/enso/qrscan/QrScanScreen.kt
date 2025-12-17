@@ -6,6 +6,7 @@ import android.graphics.PointF
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -14,11 +15,19 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -179,76 +188,163 @@ fun QrScanScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("QR 코드 스캔") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onBackClick) {
-                        Text("←", style = MaterialTheme.typography.headlineMedium)
-                    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 전체 화면 카메라 프리뷰 (시스템 바 영역 포함)
+        CameraPreview(
+            isFlashEnabled = uiState.isFlashEnabled,
+            onQrCodeDetected = { content, bounds ->
+                if (!uiState.isSuccess) {
+                    viewModel.onEvent(QrScanEvent.ProcessQrCode(content, bounds))
                 }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // 카메라는 항상 표시하되, 성공 후에는 스캔 처리 안 함
-            CameraPreview(
-                onQrCodeDetected = { content, bounds ->
-                    if (!uiState.isSuccess) {
-                        viewModel.onEvent(QrScanEvent.ProcessQrCode(content, bounds))
-                    }
-                },
-                onBoundsUpdate = { bounds ->
-                    // 성공 후에도 QR 위치가 바뀌면 박스가 따라가야 하므로 bounds 업데이트는 항상 반영
-                    viewModel.onEvent(QrScanEvent.UpdateDetectedBounds(bounds))
-                }
-            )
-
-            // QR 코드 감지 오버레이
-            uiState.detectedBounds?.let { bounds ->
-                QrOverlay(
-                    bounds = bounds,
-                    isSuccess = uiState.isSuccess,
-                    isCurrentlyDetected = uiState.isCurrentlyDetected
-                )
+            },
+            onBoundsUpdate = { bounds ->
+                viewModel.onEvent(QrScanEvent.UpdateDetectedBounds(bounds))
+            },
+            onFocusRequest = { x, y ->
+                viewModel.onEvent(QrScanEvent.RequestFocus(x, y))
             }
+        )
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = if (uiState.isSuccess) {
-                        "QR 코드 인식 완료"
-                    } else {
-                        "로또 용지의 QR 코드를 비춰주세요"
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (uiState.isSuccess) {
-                        QrOverlayStyle.successColor
-                    } else {
-                        Color.White
-                    },
-                    fontWeight = if (uiState.isSuccess) FontWeight.SemiBold else FontWeight.Normal,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(16.dp)
-                )
+        // QR 코드 감지 오버레이
+        uiState.detectedBounds?.let { bounds ->
+            QrOverlay(
+                bounds = bounds,
+                isSuccess = uiState.isSuccess,
+                isCurrentlyDetected = uiState.isCurrentlyDetected
+            )
+        }
+
+        // 포커스 애니메이션
+        if (uiState.isFocusing) {
+            uiState.focusPoint?.let { point ->
+                FocusIndicator(point = point)
             }
         }
+
+        // 상단 버튼들 (뒤로가기, 플래시) - 상태바 inset 적용
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .padding(statusBarPadding)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 뒤로가기 버튼
+            CircularButton(
+                onClick = onBackClick,
+                icon = "←"
+            )
+
+            // 플래시 버튼
+            CircularButton(
+                onClick = { viewModel.onEvent(QrScanEvent.ToggleFlash) },
+                icon = if (uiState.isFlashEnabled) "⚡" else "🔦"
+            )
+        }
+
+        // 하단 안내 문구
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (uiState.isSuccess) {
+                    "QR 코드 인식 완료"
+                } else {
+                    "로또 용지의 QR 코드를 비춰주세요"
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (uiState.isSuccess) {
+                    QrOverlayStyle.successColor
+                } else {
+                    Color.White
+                },
+                fontWeight = if (uiState.isSuccess) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        // 스낵바 호스트
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
+    }
+}
+
+@Composable
+private fun CircularButton(
+    onClick: () -> Unit,
+    icon: String
+) {
+    androidx.compose.material3.IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(48.dp)
+            .background(
+                color = Color.Black.copy(alpha = 0.6f),
+                shape = CircleShape
+            )
+    ) {
+        Text(
+            text = icon,
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+private fun FocusIndicator(point: Offset) {
+    var animationStarted by remember { mutableStateOf(false) }
+
+    LaunchedEffect(point) {
+        animationStarted = false
+        kotlinx.coroutines.delay(10)
+        animationStarted = true
+    }
+
+    val animationProgress by animateFloatAsState(
+        targetValue = if (animationStarted) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = androidx.compose.animation.core.FastOutSlowInEasing
+        ),
+        label = "focus_animation"
+    )
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val initialRadius = 80f
+        val finalRadius = 60f
+        val currentRadius = initialRadius - (initialRadius - finalRadius) * animationProgress
+
+        val initialAlpha = 1f
+        val finalAlpha = 0f
+        val currentAlpha = initialAlpha - (initialAlpha - finalAlpha) * animationProgress
+
+        // 외부 원
+        drawCircle(
+            color = Color.White.copy(alpha = currentAlpha * 0.8f),
+            radius = currentRadius,
+            center = point,
+            style = Stroke(width = 3f)
+        )
+
+        // 내부 원 (더 작은 원)
+        drawCircle(
+            color = Color.White.copy(alpha = currentAlpha * 0.4f),
+            radius = currentRadius * 0.7f,
+            center = point,
+            style = Stroke(width = 2f)
+        )
     }
 }
 
@@ -500,14 +596,17 @@ private fun QrOverlay(
 
 @Composable
 private fun CameraPreview(
+    isFlashEnabled: Boolean,
     onQrCodeDetected: (String, QrCodeBounds) -> Unit,
-    onBoundsUpdate: (QrCodeBounds?) -> Unit
+    onBoundsUpdate: (QrCodeBounds?) -> Unit,
+    onFocusRequest: (Float, Float) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val executor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
+    var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -515,13 +614,22 @@ private fun CameraPreview(
         }
     }
 
+    LaunchedEffect(isFlashEnabled) {
+        camera?.cameraControl?.enableTorch(isFlashEnabled)
+    }
+
     AndroidView(
         factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val preview = Preview.Builder().build()
+            val previewView = PreviewView(ctx).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+            val preview = Preview.Builder()
+                .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_16_9)
+                .build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             val imageAnalysis = ImageAnalysis.Builder()
+                .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_16_9)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
@@ -533,7 +641,7 @@ private fun CameraPreview(
             try {
                 cameraProviderFuture.get().let { cameraProvider ->
                     cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
+                    camera = cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         cameraSelector,
                         preview,
@@ -543,6 +651,32 @@ private fun CameraPreview(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+
+            // 터치로 포커스 맞추기
+            previewView.setOnTouchListener { view, event ->
+                if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                    val x = event.x
+                    val y = event.y
+
+                    // UI에 애니메이션 표시를 위한 콜백
+                    onFocusRequest(x, y)
+
+                    // 실제 카메라 포커스 수행
+                    camera?.let { cam ->
+                        // PreviewView의 MeteringPointFactory 사용 (정확한 좌표 변환)
+                        val factory = previewView.meteringPointFactory
+                        val point = factory.createPoint(x, y)
+
+                        // AF/AE 포인트 설정 및 자동 취소 비활성화
+                        val action = FocusMeteringAction.Builder(point)
+                            .disableAutoCancel()
+                            .build()
+
+                        cam.cameraControl.startFocusAndMetering(action)
+                    }
+                }
+                true
             }
 
             previewView
