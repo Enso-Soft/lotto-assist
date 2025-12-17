@@ -3,8 +3,9 @@ package com.enso.database.di
 import android.content.Context
 import androidx.room.Room
 import com.enso.database.LottoDatabase
+import com.enso.database.dao.LottoGameDao
 import com.enso.database.dao.LottoResultDao
-import com.enso.database.dao.UserLottoTicketDao
+import com.enso.database.dao.LottoTicketDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,7 +37,13 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideUserLottoTicketDao(database: LottoDatabase): UserLottoTicketDao {
-        return database.userLottoTicketDao()
+    fun provideLottoTicketDao(database: LottoDatabase): LottoTicketDao {
+        return database.lottoTicketDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLottoGameDao(database: LottoDatabase): LottoGameDao {
+        return database.lottoGameDao()
     }
 }

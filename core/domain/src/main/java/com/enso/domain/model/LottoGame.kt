@@ -1,15 +1,11 @@
 package com.enso.domain.model
 
-import java.util.Date
-
-data class UserLottoTicket(
-    val id: Long = 0,
-    val round: Int,
+data class LottoGame(
+    val gameId: Long = 0,
+    val gameLabel: String,        // "A", "B", "C", "D", "E"
     val numbers: List<Int>,
     val gameType: GameType,
-    val registeredDate: Date,
-    val winningRank: Int = 0,
-    val isChecked: Boolean = false
+    val winningRank: Int = 0
 )
 
 enum class GameType(val code: String, val displayName: String) {
@@ -18,7 +14,7 @@ enum class GameType(val code: String, val displayName: String) {
 
     companion object {
         fun fromCode(code: String): GameType {
-            return values().find { it.code == code } ?: AUTO
+            return entries.find { it.code == code } ?: AUTO
         }
     }
 }

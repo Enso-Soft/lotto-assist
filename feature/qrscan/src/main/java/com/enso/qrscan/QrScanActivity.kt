@@ -19,11 +19,12 @@ class QrScanActivity : ComponentActivity() {
                             putExtra(EXTRA_ROUND, ticketInfo.round)
                             putExtra(EXTRA_GAME_COUNT, ticketInfo.games.size)
 
-                            ticketInfo.games.forEachIndexed { index, numbers ->
+                            ticketInfo.games.forEachIndexed { index, gameInfo ->
                                 putIntegerArrayListExtra(
                                     "$EXTRA_GAME_PREFIX$index",
-                                    ArrayList(numbers)
+                                    ArrayList(gameInfo.numbers)
                                 )
+                                putExtra("${EXTRA_GAME_TYPE_PREFIX}$index", gameInfo.isAuto)
                             }
                         }
                         setResult(RESULT_OK, resultIntent)
@@ -41,5 +42,6 @@ class QrScanActivity : ComponentActivity() {
         const val EXTRA_ROUND = "extra_round"
         const val EXTRA_GAME_COUNT = "extra_game_count"
         const val EXTRA_GAME_PREFIX = "extra_game_"
+        const val EXTRA_GAME_TYPE_PREFIX = "extra_game_type_"
     }
 }

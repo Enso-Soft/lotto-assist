@@ -1,14 +1,14 @@
 package com.enso.home
 
 import com.enso.domain.model.LottoResult
-import com.enso.domain.model.UserLottoTicket
+import com.enso.domain.model.LottoTicket
 
 data class LottoResultUiState(
     val isLoading: Boolean = false,
     val isSyncing: Boolean = false,
     val lottoResults: List<LottoResult> = emptyList(),
     val selectedResult: LottoResult? = null,
-    val userTickets: List<UserLottoTicket> = emptyList(),
+    val tickets: List<LottoTicket> = emptyList(),
     val error: String? = null,
     val currentRound: Int = 0,
     val isBottomSheetOpen: Boolean = false
@@ -22,7 +22,7 @@ sealed class LottoResultEvent {
     data object StartSync : LottoResultEvent()
     data object OpenQrScan : LottoResultEvent()
     data object OpenManualInput : LottoResultEvent()
-    data class SaveQrTickets(val round: Int, val games: List<List<Int>>) : LottoResultEvent()
+    data class SaveQrTickets(val round: Int, val games: List<List<Int>>, val gameTypes: List<Boolean>) : LottoResultEvent()
     data class SaveManualTicket(val round: Int, val numbers: List<Int>, val isAuto: Boolean) : LottoResultEvent()
     data class DeleteTicket(val ticketId: Long) : LottoResultEvent()
     data class CheckWinning(val ticketId: Long) : LottoResultEvent()

@@ -2,9 +2,14 @@ package com.enso.qrscan.parser
 
 import android.util.Log
 
+data class GameInfo(
+    val numbers: List<Int>,
+    val isAuto: Boolean
+)
+
 data class LottoTicketInfo(
     val round: Int,
-    val games: List<List<Int>>
+    val games: List<GameInfo>
 )
 
 object LottoQrParser {
@@ -18,31 +23,26 @@ object LottoQrParser {
             val round = vParam.take(4).toInt()
             Log.d("whk__", "round : $round")
 
-            val gameCount = when (vParam.getOrNull(4)) {
-                'm' -> 1
-                'n' -> 2
-                'o' -> 3
-                'p' -> 4
-                'q' -> 5
-                else -> return null
-            }
+            val gamesString = vParam.drop(4)
+            Log.d("whk__", "gamesString : $gamesString")
 
-            Log.d("whk__", "gameCount : $gameCount")
+            // m 또는 q로 시작하는 게임들을 정규표현식으로 찾기
+            // m = 수동, q = 자동
+            val gamePattern = "[mq]\\d{12}".toRegex()
+            val gameMatches = gamePattern.findAll(gamesString).toList()
+            Log.d("whk__", "gameMatches count : ${gameMatches.size}")
 
-            val numbersString = vParam.drop(5)
-            Log.d("whk__", "numbersString : $numbersString")
-
-            // Split by 'q' to separate individual games
-            val gameStrings = numbersString.split('q').filter { it.isNotEmpty() }
-            Log.d("whk__", "gameStrings : $gameStrings")
-
-            val games = gameStrings.take(gameCount).map { gameNumbers ->
-                // Each game should have 12 digits (6 numbers x 2 digits each)
-                (0 until 6).map { numIndex ->
-                    gameNumbers.drop(numIndex * 2).take(2).toInt()
+            val games = gameMatches.map { match ->
+                val gameString = match.value
+                val isAuto = gameString[0] == 'q'  // q면 자동, m이면 수동
+                val numbers = (0 until 6).map { numIndex ->
+                    gameString.drop(1 + numIndex * 2).take(2).toInt()
                 }
+                Log.d("whk__", "game: isAuto=$isAuto, numbers=$numbers")
+                GameInfo(numbers = numbers, isAuto = isAuto)
             }
-            Log.d("whk__", "games : $games")
+
+            if (games.isEmpty()) return null
 
             LottoTicketInfo(round = round, games = games)
         } catch (e: Exception) {

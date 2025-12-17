@@ -30,8 +30,12 @@ class HomeActivity : ComponentActivity() {
                         ?: emptyList<Int>()
                 }
 
+                val gameTypes = (0 until gameCount).map { index ->
+                    data.getBooleanExtra("${QrScanActivity.EXTRA_GAME_TYPE_PREFIX}$index", true)
+                }
+
                 // ViewModel에 저장 이벤트 전달
-                viewModel?.onEvent(LottoResultEvent.SaveQrTickets(round, games))
+                viewModel?.onEvent(LottoResultEvent.SaveQrTickets(round, games, gameTypes))
             }
         }
 

@@ -3,16 +3,16 @@ package com.enso.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enso.domain.model.GameType
+import com.enso.domain.model.LottoGame
 import com.enso.domain.model.LottoResult
-import com.enso.domain.model.UserLottoTicket
-import com.enso.domain.usecase.CheckWinningUseCase
-import com.enso.domain.usecase.DeleteUserTicketUseCase
+import com.enso.domain.model.LottoTicket
+import com.enso.domain.usecase.CheckTicketWinningUseCase
+import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
-import com.enso.domain.usecase.GetUserTicketsUseCase
-import com.enso.domain.usecase.SaveUserTicketUseCase
+import com.enso.domain.usecase.GetLottoTicketsUseCase
+import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.domain.usecase.SyncLottoResultsUseCase
-import com.enso.domain.usecase.UpdateUserTicketUseCase
 import com.enso.util.lotto_date.LottoDate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -30,11 +30,10 @@ class LottoResultViewModel @Inject constructor(
     private val getLottoResultUseCase: GetLottoResultUseCase,
     private val getAllLottoResultsUseCase: GetAllLottoResultsUseCase,
     private val syncLottoResultsUseCase: SyncLottoResultsUseCase,
-    private val getUserTicketsUseCase: GetUserTicketsUseCase,
-    private val saveUserTicketUseCase: SaveUserTicketUseCase,
-    private val updateUserTicketUseCase: UpdateUserTicketUseCase,
-    private val deleteUserTicketUseCase: DeleteUserTicketUseCase,
-    private val checkWinningUseCase: CheckWinningUseCase,
+    private val getLottoTicketsUseCase: GetLottoTicketsUseCase,
+    private val saveLottoTicketUseCase: SaveLottoTicketUseCase,
+    private val deleteLottoTicketUseCase: DeleteLottoTicketUseCase,
+    private val checkTicketWinningUseCase: CheckTicketWinningUseCase,
     private val lottoRepository: com.enso.domain.repository.LottoRepository
 ) : ViewModel() {
 
@@ -78,9 +77,9 @@ class LottoResultViewModel @Inject constructor(
 
     private fun observeUserTickets() {
         viewModelScope.launch {
-            getUserTicketsUseCase()
+            getLottoTicketsUseCase()
                 .collect { tickets ->
-                    _state.update { it.copy(userTickets = tickets) }
+                    _state.update { it.copy(tickets = tickets) }
                 }
         }
     }
@@ -112,7 +111,7 @@ class LottoResultViewModel @Inject constructor(
             is LottoResultEvent.StartSync -> startSync()
             is LottoResultEvent.OpenQrScan -> openQrScan()
             is LottoResultEvent.OpenManualInput -> openManualInput()
-            is LottoResultEvent.SaveQrTickets -> saveQrTickets(event.round, event.games)
+            is LottoResultEvent.SaveQrTickets -> saveQrTickets(event.round, event.games, event.gameTypes)
             is LottoResultEvent.SaveManualTicket -> saveManualTicket(event.round, event.numbers, event.isAuto)
             is LottoResultEvent.DeleteTicket -> deleteTicket(event.ticketId)
             is LottoResultEvent.CheckWinning -> checkWinning(event.ticketId)
@@ -191,20 +190,29 @@ class LottoResultViewModel @Inject constructor(
         }
     }
 
-    private fun saveQrTickets(round: Int, games: List<List<Int>>) {
+    private fun saveQrTickets(round: Int, games: List<List<Int>>, gameTypes: List<Boolean>) {
         viewModelScope.launch {
-            val tickets = games.mapIndexed { index, numbers ->
-                UserLottoTicket(
-                    round = round,
+            val gameLabels = listOf("A", "B", "C", "D", "E")
+            val lottoGames = games.mapIndexed { index, numbers ->
+                val isAuto = gameTypes.getOrNull(index) ?: true
+                LottoGame(
+                    gameLabel = gameLabels.getOrNull(index) ?: "A",
                     numbers = numbers.sorted(),
-                    gameType = GameType.AUTO,
-                    registeredDate = Date()
+                    gameType = if (isAuto) GameType.AUTO else GameType.MANUAL,
+                    winningRank = 0
                 )
             }
 
-            saveUserTicketUseCase.saveMultiple(tickets)
+            val ticket = LottoTicket(
+                round = round,
+                registeredDate = Date(),
+                isChecked = false,
+                games = lottoGames
+            )
+
+            saveLottoTicketUseCase(ticket)
                 .onSuccess {
-                    _effect.send(LottoResultEffect.ShowTicketSaved(tickets.size))
+                    _effect.send(LottoResultEffect.ShowTicketSaved(games.size))
                 }
                 .onFailure { e ->
                     _effect.send(LottoResultEffect.ShowError(e.message ?: "티켓 저장 실패"))
@@ -214,14 +222,21 @@ class LottoResultViewModel @Inject constructor(
 
     private fun saveManualTicket(round: Int, numbers: List<Int>, isAuto: Boolean) {
         viewModelScope.launch {
-            val ticket = UserLottoTicket(
-                round = round,
+            val game = LottoGame(
+                gameLabel = "A",
                 numbers = numbers.sorted(),
                 gameType = if (isAuto) GameType.AUTO else GameType.MANUAL,
-                registeredDate = Date()
+                winningRank = 0
             )
 
-            saveUserTicketUseCase(ticket)
+            val ticket = LottoTicket(
+                round = round,
+                registeredDate = Date(),
+                isChecked = false,
+                games = listOf(game)
+            )
+
+            saveLottoTicketUseCase(ticket)
                 .onSuccess {
                     _effect.send(LottoResultEffect.ShowTicketSaved(1))
                 }
@@ -233,7 +248,7 @@ class LottoResultViewModel @Inject constructor(
 
     private fun deleteTicket(ticketId: Long) {
         viewModelScope.launch {
-            deleteUserTicketUseCase(ticketId)
+            deleteLottoTicketUseCase(ticketId)
                 .onFailure { e ->
                     _effect.send(LottoResultEffect.ShowError(e.message ?: "티켓 삭제 실패"))
                 }
@@ -242,16 +257,15 @@ class LottoResultViewModel @Inject constructor(
 
     private fun checkWinning(ticketId: Long) {
         viewModelScope.launch {
-            val ticket = _state.value.userTickets.find { it.id == ticketId } ?: return@launch
+            val ticket = _state.value.tickets.find { it.ticketId == ticketId } ?: return@launch
 
-            checkWinningUseCase(ticket.round, ticket.numbers)
-                .onSuccess { result ->
-                    val updatedTicket = ticket.copy(
-                        winningRank = result.rank,
-                        isChecked = true
-                    )
-                    updateUserTicketUseCase(updatedTicket)
-                    _effect.send(LottoResultEffect.ShowWinningResult(result.rank))
+            checkTicketWinningUseCase(ticket)
+                .onSuccess {
+                    // 티켓 내 게임들의 최고 당첨 등수 표시
+                    val highestRank = ticket.games.minOfOrNull { it.winningRank } ?: 0
+                    if (highestRank > 0) {
+                        _effect.send(LottoResultEffect.ShowWinningResult(highestRank))
+                    }
                 }
                 .onFailure { e ->
                     _effect.send(LottoResultEffect.ShowError(e.message ?: "당첨 확인 실패"))

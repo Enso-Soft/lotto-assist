@@ -4,10 +4,12 @@ import com.enso.data.datasource.LottoLocalDataSource
 import com.enso.data.datasource.LottoLocalDataSourceImpl
 import com.enso.data.datasource.LottoRemoteDataSource
 import com.enso.data.datasource.LottoRemoteDataSourceImpl
+import com.enso.data.datasource.LottoTicketLocalDataSource
+import com.enso.data.datasource.LottoTicketLocalDataSourceImpl
 import com.enso.data.repository.LottoRepositoryImpl
-import com.enso.data.repository.UserTicketRepositoryImpl
+import com.enso.data.repository.LottoTicketRepositoryImpl
 import com.enso.domain.repository.LottoRepository
-import com.enso.domain.repository.UserTicketRepository
+import com.enso.domain.repository.LottoTicketRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -24,7 +26,7 @@ interface DataModule {
 
     @Binds
     @Singleton
-    fun bindUserTicketRepository(impl: UserTicketRepositoryImpl): UserTicketRepository
+    fun bindLottoTicketRepository(impl: LottoTicketRepositoryImpl): LottoTicketRepository
 
     @Binds
     @Singleton
@@ -33,4 +35,8 @@ interface DataModule {
     @Binds
     @Singleton
     fun bindLottoRemoteDataSource(impl: LottoRemoteDataSourceImpl): LottoRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindLottoTicketLocalDataSource(impl: LottoTicketLocalDataSourceImpl): LottoTicketLocalDataSource
 }

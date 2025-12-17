@@ -74,3 +74,51 @@ fun MediumLottoBall(
         fontSize = 14.sp
     )
 }
+
+@Composable
+fun TinyLottoBall(
+    number: Int,
+    modifier: Modifier = Modifier
+) {
+    LottoBall(
+        number = number,
+        modifier = modifier,
+        size = 18.dp,
+        fontSize = 9.sp
+    )
+}
+
+@Composable
+fun HighlightedSmallLottoBall(
+    number: Int,
+    isMatched: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isMatched) {
+        getLottoBallColor(number)
+    } else {
+        Color.LightGray.copy(alpha = 0.3f)
+    }
+
+    Box(
+        modifier = modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(backgroundColor)
+            .border(
+                width = if (isMatched) 1.dp else 0.5.dp,
+                color = if (isMatched) Color.White.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.3f),
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = number.toString(),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 11.sp,
+                fontWeight = if (isMatched) FontWeight.Bold else FontWeight.Normal,
+                color = if (isMatched) Color.White else Color.DarkGray
+            )
+        )
+    }
+}
