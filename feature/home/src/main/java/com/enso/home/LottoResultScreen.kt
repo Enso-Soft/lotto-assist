@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -561,18 +565,27 @@ private fun MyLottoSection(
         if (tickets.isEmpty()) {
             EmptyTicketCard()
         } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                tickets.take(3).forEach { ticket ->
-                    TicketCard(
-                        ticket = ticket,
-                        lottoResult = lottoResults.find { it.round == ticket.round },
-                        currentRound = currentRound,
-                        onCheckWinning = { onCheckWinning(ticket.ticketId) },
-                        onDelete = { onDeleteTicket(ticket.ticketId) }
-                    )
-                }
+            val pagerState = rememberPagerState(pageCount = { tickets.size })
+            // 가장 큰 게임 수를 기준으로 높이 계산
+            val maxGames = tickets.maxOfOrNull { it.games.size } ?: 5
+            val baseHeight = 150.dp // 헤더 + 당첨번호 정보 + 패딩
+            val gameHeight = 38.dp // 게임 1개당 높이
+            val cardHeight = baseHeight + (gameHeight * maxGames)
+
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 40.dp),
+                pageSpacing = 12.dp,
+                modifier = Modifier.height(cardHeight)
+            ) { page ->
+                val ticket = tickets[page]
+                TicketCard(
+                    ticket = ticket,
+                    lottoResult = lottoResults.find { it.round == ticket.round },
+                    currentRound = currentRound,
+                    onCheckWinning = { onCheckWinning(ticket.ticketId) },
+                    onDelete = { onDeleteTicket(ticket.ticketId) }
+                )
             }
         }
     }
@@ -618,7 +631,9 @@ private fun TicketCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(),
         colors = CardDefaults.cardColors(containerColor = CardLight),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
