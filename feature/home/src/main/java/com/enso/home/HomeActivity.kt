@@ -11,13 +11,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.enso.qrscan.QrScanActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class HomeActivity : ComponentActivity() {
-
-    private var onQrScanResult: ((round: Int, games: List<List<Int>>) -> Unit)? by mutableStateOf(null)
 
     private val qrScanLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -31,18 +30,28 @@ class HomeActivity : ComponentActivity() {
                         ?: emptyList<Int>()
                 }
 
-                onQrScanResult?.invoke(round, games)
+                val gameTypes = (0 until gameCount).map { index ->
+                    data.getBooleanExtra("${QrScanActivity.EXTRA_GAME_TYPE_PREFIX}$index", true)
+                }
+
+                // ViewModel에 저장 이벤트 전달
+                viewModel?.onEvent(LottoResultEvent.SaveQrTickets(round, games, gameTypes))
             }
         }
+
+    private var viewModel: LottoResultViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MaterialTheme {
+                val vm: LottoResultViewModel = hiltViewModel()
+                viewModel = vm
+
                 LottoResultScreen(
-                    onQrScanClick = { callback ->
-                        onQrScanResult = callback
+                    viewModel = vm,
+                    onQrScanClick = {
                         qrScanLauncher.launch(Intent(this, QrScanActivity::class.java))
                     }
                 )

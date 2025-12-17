@@ -3,7 +3,9 @@ package com.enso.database.di
 import android.content.Context
 import androidx.room.Room
 import com.enso.database.LottoDatabase
+import com.enso.database.dao.LottoGameDao
 import com.enso.database.dao.LottoResultDao
+import com.enso.database.dao.LottoTicketDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,12 +24,26 @@ object DatabaseModule {
             context,
             LottoDatabase::class.java,
             "lotto_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideLottoResultDao(database: LottoDatabase): LottoResultDao {
         return database.lottoResultDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLottoTicketDao(database: LottoDatabase): LottoTicketDao {
+        return database.lottoTicketDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLottoGameDao(database: LottoDatabase): LottoGameDao {
+        return database.lottoGameDao()
     }
 }
