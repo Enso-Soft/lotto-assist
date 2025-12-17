@@ -76,6 +76,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
+import com.enso.home.ui.components.ConfirmDeleteDialog
 import com.enso.home.ui.components.HighlightedSmallLottoBall
 import com.enso.home.ui.components.LottoBall
 import com.enso.home.ui.components.ManualInputDialog
@@ -618,6 +619,7 @@ private fun TicketCard(
     onDelete: () -> Unit
 ) {
     val isDrawComplete = ticket.round <= currentRound
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(ticket.ticketId, ticket.isChecked, isDrawComplete) {
         if (isDrawComplete && !ticket.isChecked) {
@@ -645,22 +647,24 @@ private fun TicketCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "제 ${ticket.round}회",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = TextMainLight
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        formatTicketDate(ticket.registeredDate),
+                        formatDrawDate(ticket.registeredDate),
                         fontSize = 11.sp,
-                        color = TextSubLight,
-                        modifier = Modifier.padding(top = 2.dp)
+                        color = TextSubLight
                     )
                 }
                 IconButton(
-                    onClick = onDelete,
+                    onClick = { showDeleteDialog = true },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
@@ -777,6 +781,16 @@ private fun TicketCard(
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        ConfirmDeleteDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete()
+            }
+        )
     }
 }
 
