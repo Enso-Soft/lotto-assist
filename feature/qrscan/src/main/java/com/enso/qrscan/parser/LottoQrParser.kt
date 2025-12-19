@@ -9,7 +9,8 @@ data class GameInfo(
 
 data class LottoTicketInfo(
     val round: Int,
-    val games: List<GameInfo>
+    val games: List<GameInfo>,
+    val qrUrl: String
 )
 
 object LottoQrParser {
@@ -44,7 +45,7 @@ object LottoQrParser {
 
             if (games.isEmpty()) return null
 
-            LottoTicketInfo(round = round, games = games)
+            LottoTicketInfo(round = round, games = games, qrUrl = qrContent)
         } catch (e: Exception) {
             Log.d("whk__", "error : $e")
             null

@@ -1,7 +1,1 @@
-<resources>
-    <!-- 삭제 확인 다이얼로그 -->
-    <string name="dialog_delete_ticket_title">로또 번호를 삭제할까요?</string>
-    <string name="dialog_delete_ticket_message">삭제한 번호는 복구할 수 없어요</string>
-    <string name="dialog_delete_ticket_confirm">삭제하기</string>
-    <string name="dialog_delete_ticket_cancel">취소</string>
-</resources>
+<resources />

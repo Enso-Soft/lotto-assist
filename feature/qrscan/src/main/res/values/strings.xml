@@ -1,0 +1,14 @@
+<resources>
+    <string name="qr_scan_back">뒤로가기</string>
+    <string name="qr_scan_flash_on">플래시 끄기</string>
+    <string name="qr_scan_flash_off">플래시 켜기</string>
+    <string name="qr_scan_continue">계속 스캔</string>
+    <string name="qr_scan_exit">종료</string>
+    <string name="qr_scan_guide">로또 용지의 QR 코드를 비춰주세요</string>
+    <string name="qr_scan_saved">저장 완료</string>
+    <string name="qr_scan_duplicate">이미 추가된 QR입니다</string>
+    <string name="qr_scan_invalid">유효하지 않은 로또 QR 코드입니다</string>
+    <string name="qr_scan_save_failed">티켓 저장에 실패했습니다</string>
+    <string name="qr_scan_delete_failed">티켓 삭제 실패</string>
+    <string name="qr_scan_check_failed">당첨 확인 실패</string>
+</resources>

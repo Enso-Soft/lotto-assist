@@ -1,6 +1,5 @@
 package com.enso.qrscan
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -23,34 +22,10 @@ class QrScanActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 QrScanScreen(
-                    onScanSuccess = { ticketInfo ->
-                        val resultIntent = Intent().apply {
-                            putExtra(EXTRA_ROUND, ticketInfo.round)
-                            putExtra(EXTRA_GAME_COUNT, ticketInfo.games.size)
-
-                            ticketInfo.games.forEachIndexed { index, gameInfo ->
-                                putIntegerArrayListExtra(
-                                    "$EXTRA_GAME_PREFIX$index",
-                                    ArrayList(gameInfo.numbers)
-                                )
-                                putExtra("${EXTRA_GAME_TYPE_PREFIX}$index", gameInfo.isAuto)
-                            }
-                        }
-                        setResult(RESULT_OK, resultIntent)
-                        finish()
-                    },
-                    onBackClick = {
-                        finish()
-                    }
+                    onExit = { finish() }
                 )
             }
         }
     }
 
-    companion object {
-        const val EXTRA_ROUND = "extra_round"
-        const val EXTRA_GAME_COUNT = "extra_game_count"
-        const val EXTRA_GAME_PREFIX = "extra_game_"
-        const val EXTRA_GAME_TYPE_PREFIX = "extra_game_type_"
-    }
 }

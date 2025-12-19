@@ -9,5 +9,6 @@ data class LottoTicketEntity(
     val ticketId: Long = 0,
     val round: Int,                    // 회차
     val registeredDate: Long,          // 등록일시 (timestamp)
-    val isChecked: Boolean = false     // 당첨 확인 여부
+    val isChecked: Boolean = false,    // 당첨 확인 여부
+    val qrUrl: String? = null          // QR 원본 URL (중복 방지용)
 )

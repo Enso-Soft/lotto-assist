@@ -18,6 +18,7 @@ interface LottoTicketLocalDataSource {
     suspend fun getGamesByTicketId(ticketId: Long): List<LottoGameEntity>
     suspend fun updateGameWinningRank(gameId: Long, rank: Int)
     suspend fun updateTicketCheckedStatus(ticketId: Long, isChecked: Boolean)
+    suspend fun existsByQrUrl(qrUrl: String): Boolean
 }
 
 class LottoTicketLocalDataSourceImpl @Inject constructor(
@@ -63,5 +64,9 @@ class LottoTicketLocalDataSourceImpl @Inject constructor(
 
     override suspend fun updateTicketCheckedStatus(ticketId: Long, isChecked: Boolean) {
         ticketDao.updateCheckedStatus(ticketId, isChecked)
+    }
+
+    override suspend fun existsByQrUrl(qrUrl: String): Boolean {
+        return ticketDao.existsByQrUrl(qrUrl)
     }
 }

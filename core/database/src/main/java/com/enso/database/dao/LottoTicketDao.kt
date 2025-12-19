@@ -38,4 +38,7 @@ interface LottoTicketDao {
 
     @Query("SELECT COUNT(*) FROM lotto_tickets")
     suspend fun getCount(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM lotto_tickets WHERE qrUrl = :qrUrl)")
+    suspend fun existsByQrUrl(qrUrl: String): Boolean
 }

@@ -20,24 +20,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,16 +54,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material3.Icon
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.enso.qrscan.parser.LottoTicketInfo
+import com.enso.home.ui.components.MyLottoSection
+import com.enso.home.ui.theme.BackgroundLight
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -135,8 +142,7 @@ private object QrOverlayStyle {
 @Composable
 fun QrScanScreen(
     viewModel: QrScanViewModel = hiltViewModel(),
-    onScanSuccess: (LottoTicketInfo) -> Unit,
-    onBackClick: () -> Unit
+    onExit: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -145,27 +151,10 @@ fun QrScanScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is QrScanEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                is QrScanEffect.ShowMessage -> {
+                    snackbarHostState.showSnackbar(context.getString(effect.messageRes))
                 }
             }
-        }
-    }
-
-    // 성공 시: 화면은 유지하고 하단 스낵바 액션으로 "당첨 여부 확인"을 진행
-    LaunchedEffect(uiState.scannedResult) {
-        val ticketInfo = uiState.scannedResult ?: return@LaunchedEffect
-
-        val result = snackbarHostState.showSnackbar(
-            message = "QR 코드 인식 완료",
-            actionLabel = "로또 당첨 여부 확인하기",
-            withDismissAction = true,
-            duration = SnackbarDuration.Indefinite
-        )
-
-        when (result) {
-            SnackbarResult.ActionPerformed -> onScanSuccess(ticketInfo)
-            SnackbarResult.Dismissed -> viewModel.onEvent(QrScanEvent.ResetAfterSuccess)
         }
     }
 
@@ -193,7 +182,7 @@ fun QrScanScreen(
         CameraPreview(
             isFlashEnabled = uiState.isFlashEnabled,
             onQrCodeDetected = { content, bounds ->
-                if (!uiState.isSuccess) {
+                if (!uiState.isSuccess && !uiState.isSaving) {
                     viewModel.onEvent(QrScanEvent.ProcessQrCode(content, bounds))
                 }
             },
@@ -232,15 +221,21 @@ fun QrScanScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // 뒤로가기 버튼
-            CircularButton(
-                onClick = onBackClick,
-                icon = "←"
+            CircularIconButton(
+                onClick = onExit,
+                icon = Icons.Default.ArrowBack,
+                contentDescription = stringResource(R.string.qr_scan_back)
             )
 
             // 플래시 버튼
-            CircularButton(
+            CircularIconButton(
                 onClick = { viewModel.onEvent(QrScanEvent.ToggleFlash) },
-                icon = if (uiState.isFlashEnabled) "⚡" else "🔦"
+                icon = if (uiState.isFlashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                contentDescription = if (uiState.isFlashEnabled) {
+                    stringResource(R.string.qr_scan_flash_on)
+                } else {
+                    stringResource(R.string.qr_scan_flash_off)
+                }
             )
         }
 
@@ -252,22 +247,66 @@ fun QrScanScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (uiState.isSuccess) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { viewModel.onEvent(QrScanEvent.ResetAfterSuccess) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = stringResource(R.string.qr_scan_continue))
+                    }
+                    TextButton(
+                        onClick = onExit,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = stringResource(R.string.qr_scan_exit))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            val statusText = when (uiState.lastScanResult) {
+                QrScanResult.Saved -> stringResource(R.string.qr_scan_saved)
+                QrScanResult.Duplicate -> stringResource(R.string.qr_scan_duplicate)
+                null -> stringResource(R.string.qr_scan_guide)
+            }
+
             Text(
-                text = if (uiState.isSuccess) {
-                    "QR 코드 인식 완료"
-                } else {
-                    "로또 용지의 QR 코드를 비춰주세요"
-                },
+                text = statusText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (uiState.isSuccess) {
-                    QrOverlayStyle.successColor
-                } else {
-                    Color.White
-                },
+                color = if (uiState.isSuccess) QrOverlayStyle.successColor else Color.White,
                 fontWeight = if (uiState.isSuccess) FontWeight.SemiBold else FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(16.dp)
             )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = BackgroundLight,
+                shape = RoundedCornerShape(20.dp),
+                tonalElevation = 2.dp
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    MyLottoSection(
+                        tickets = uiState.tickets,
+                        lottoResults = uiState.lottoResults,
+                        currentRound = uiState.currentRound,
+                        onCheckWinning = { ticketId ->
+                            viewModel.onEvent(QrScanEvent.CheckWinning(ticketId))
+                        },
+                        onDeleteTicket = { ticketId ->
+                            viewModel.onEvent(QrScanEvent.DeleteTicket(ticketId))
+                        },
+                        showViewAll = false,
+                        enableDelete = false
+                    )
+                }
+            }
         }
 
         // 스낵바 호스트
@@ -281,9 +320,10 @@ fun QrScanScreen(
 }
 
 @Composable
-private fun CircularButton(
+private fun CircularIconButton(
     onClick: () -> Unit,
-    icon: String
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String
 ) {
     androidx.compose.material3.IconButton(
         onClick = onClick,
@@ -294,10 +334,10 @@ private fun CircularButton(
                 shape = CircleShape
             )
     ) {
-        Text(
-            text = icon,
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.White
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White
         )
     }
 }

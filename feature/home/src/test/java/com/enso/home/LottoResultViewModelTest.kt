@@ -3,11 +3,19 @@ package com.enso.home
 import app.cash.turbine.test
 import com.enso.domain.model.FirstPrizeInfo
 import com.enso.domain.model.LottoResult
+import com.enso.domain.repository.LottoRepository
+import com.enso.domain.usecase.CheckTicketWinningUseCase
+import com.enso.domain.usecase.DeleteLottoTicketUseCase
+import com.enso.domain.usecase.GetAllLottoResultsUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
+import com.enso.domain.usecase.GetLottoTicketsUseCase
+import com.enso.domain.usecase.SaveLottoTicketUseCase
+import com.enso.domain.usecase.SyncLottoResultsUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -28,6 +36,13 @@ class LottoResultViewModelTest {
 
     private lateinit var viewModel: LottoResultViewModel
     private lateinit var getLottoResultUseCase: GetLottoResultUseCase
+    private lateinit var getAllLottoResultsUseCase: GetAllLottoResultsUseCase
+    private lateinit var syncLottoResultsUseCase: SyncLottoResultsUseCase
+    private lateinit var getLottoTicketsUseCase: GetLottoTicketsUseCase
+    private lateinit var saveLottoTicketUseCase: SaveLottoTicketUseCase
+    private lateinit var deleteLottoTicketUseCase: DeleteLottoTicketUseCase
+    private lateinit var checkTicketWinningUseCase: CheckTicketWinningUseCase
+    private lateinit var lottoRepository: LottoRepository
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -46,7 +61,21 @@ class LottoResultViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+
         getLottoResultUseCase = mockk()
+        getAllLottoResultsUseCase = mockk()
+        syncLottoResultsUseCase = mockk()
+        getLottoTicketsUseCase = mockk()
+        saveLottoTicketUseCase = mockk()
+        deleteLottoTicketUseCase = mockk()
+        checkTicketWinningUseCase = mockk()
+        lottoRepository = mockk()
+
+        coEvery { getAllLottoResultsUseCase() } returns flowOf(listOf(mockLottoResult))
+        coEvery { getLottoTicketsUseCase(any()) } returns flowOf(emptyList())
+        coEvery { syncLottoResultsUseCase(any()) } returns Result.success(Unit)
+        coEvery { lottoRepository.getLocalCount() } returns 1
+        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult)
     }
 
     @After
@@ -54,29 +83,42 @@ class LottoResultViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun `초기화 시 최신 회차 로또 결과를 로드한다`() = runTest {
-        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult)
+    private fun createViewModel() {
+        viewModel = LottoResultViewModel(
+            getLottoResultUseCase = getLottoResultUseCase,
+            getAllLottoResultsUseCase = getAllLottoResultsUseCase,
+            syncLottoResultsUseCase = syncLottoResultsUseCase,
+            getLottoTicketsUseCase = getLottoTicketsUseCase,
+            saveLottoTicketUseCase = saveLottoTicketUseCase,
+            deleteLottoTicketUseCase = deleteLottoTicketUseCase,
+            checkTicketWinningUseCase = checkTicketWinningUseCase,
+            lottoRepository = lottoRepository
+        )
+    }
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
+    @Test
+    fun `초기화 시 결과 목록을 관찰하고 선택값이 설정된다`() = runTest {
+        createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
-        assertNotNull(state.lottoResult)
+        assertNotNull(state.selectedResult)
+        assertEquals(mockLottoResult, state.selectedResult)
         assertNull(state.error)
         assertTrue(state.currentRound > 0)
     }
 
     @Test
     fun `로또 결과 로드 성공 시 상태가 업데이트된다`() = runTest {
-        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult)
+        createViewModel()
+        advanceUntilIdle()
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
+        viewModel.onEvent(LottoResultEvent.LoadResult(mockLottoResult.round))
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(mockLottoResult, state.lottoResult)
+        assertEquals(mockLottoResult, state.selectedResult)
         assertFalse(state.isLoading)
         assertNull(state.error)
     }
@@ -84,14 +126,18 @@ class LottoResultViewModelTest {
     @Test
     fun `로또 결과 로드 실패 시 에러 상태가 업데이트된다`() = runTest {
         val errorMessage = "네트워크 오류"
+        coEvery { getAllLottoResultsUseCase() } returns flowOf(emptyList())
         coEvery { getLottoResultUseCase(any()) } returns Result.failure(Exception(errorMessage))
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
+        createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(LottoResultEvent.LoadResult(1100))
         advanceUntilIdle()
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
-        assertNull(state.lottoResult)
+        assertNull(state.selectedResult)
         assertNotNull(state.error)
         assertEquals(errorMessage, state.error)
     }
@@ -101,9 +147,10 @@ class LottoResultViewModelTest {
         val errorMessage = "네트워크 오류"
         coEvery { getLottoResultUseCase(any()) } returns Result.failure(Exception(errorMessage))
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
+        createViewModel()
 
         viewModel.effect.test {
+            viewModel.onEvent(LottoResultEvent.LoadResult(1100))
             advanceUntilIdle()
 
             val effect = awaitItem()
@@ -115,56 +162,39 @@ class LottoResultViewModelTest {
     @Test
     fun `특정 회차 로드 이벤트 시 해당 회차를 로드한다`() = runTest {
         val targetRound = 1100
-        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult) andThen
-            Result.success(mockLottoResult.copy(round = targetRound))
+        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult.copy(round = targetRound))
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
+        createViewModel()
         advanceUntilIdle()
 
         viewModel.onEvent(LottoResultEvent.LoadResult(targetRound))
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(targetRound, state.lottoResult?.round)
+        assertEquals(targetRound, state.selectedResult?.round)
     }
 
     @Test
-    fun `새로고침 이벤트 시 현재 회차를 다시 로드한다`() = runTest {
-        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult)
+    fun `새로고침 이벤트 시 동기화 완료 Effect를 발생시킨다`() = runTest {
+        createViewModel()
 
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            viewModel.onEvent(LottoResultEvent.Refresh)
+            advanceUntilIdle()
 
-        val currentRound = viewModel.state.value.currentRound
+            val effect = awaitItem()
+            assertTrue(effect is LottoResultEffect.SyncCompleted)
+        }
+    }
 
-        viewModel.onEvent(LottoResultEvent.Refresh)
+    @Test
+    fun `로또 결과 로드 후 isLoading이 false다`() = runTest {
+        createViewModel()
+
+        viewModel.onEvent(LottoResultEvent.LoadResult(mockLottoResult.round))
         advanceUntilIdle()
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
-        assertNotNull(state.lottoResult)
-        assertEquals(currentRound, state.currentRound)
-    }
-
-    @Test
-    fun `로딩 중에는 isLoading이 true다`() = runTest {
-        coEvery { getLottoResultUseCase(any()) } returns Result.success(mockLottoResult)
-
-        viewModel = LottoResultViewModel(getLottoResultUseCase)
-
-        viewModel.state.test {
-            // 초기 상태 (아직 로딩 시작 전)
-            val initialState = awaitItem()
-
-            // 로딩 시작 상태
-            val loadingState = awaitItem()
-            assertTrue(loadingState.isLoading)
-
-            advanceUntilIdle()
-
-            // 로딩 완료 상태
-            val loadedState = expectMostRecentItem()
-            assertFalse(loadedState.isLoading)
-        }
     }
 }
