@@ -46,6 +46,19 @@ This project leverages the following MCP servers to support efficient developmen
 2. Context7 → Search patterns ("BottomSheet filter UI", "UiState immutable update")
 3. Implement → Domain → Data → Presentation, verify at each step
 
+### Exa (Web Search / Research)
+**Purpose**: Collect up-to-date external information to support implementation and troubleshooting
+
+**When to use**:
+- Before coding, to identify expected pitfalls and common failure modes
+- To verify external API usage, breaking changes, or release notes
+- To find real-world solutions for errors or stack traces
+- To compare patterns and best practices across sources
+
+**Notes**:
+- Use Exa to draft a pre-flight troubleshooting checklist
+- Always validate findings against local versions and the current codebase
+
 ### GitHub MCP (Issue/PR/Repo)
 **Purpose**: Automate GitHub issue/PR/repository work and keep an audit trail
 
@@ -157,16 +170,21 @@ Run commands and fix until green:
 
 ---
 
-## Issue-Based Workflow (Recent Practice)
-1. Read the issue body → summarize requirements and open decisions
-2. Ask clarifying questions and confirm decisions (save mode, duplicate rule, multi-round allowance, etc.)
-3. Update the issue body + leave a comment with the change rationale/history
-4. Confirm base branch → branch off with `feature/*`
-5. Implement minimal changes in order: Domain → Data → Presentation
-6. Organize strings/resources and run tests (state explicitly if not possible)
-7. Commit changes (confirm whether to include `AGENTS.md` updates)
-8. Push branch to origin
-9. Create PR (confirm base/head, include `Closes #issue-number` in the body)
+## Issue-Based Workflow (Reusable)
+1. Read the issue body and summarize requirements + open decisions
+2. Ask clarifying questions and confirm decisions (save mode, duplicate rule, multi-round allowance, UX copy, data source, etc.)
+3. Update the issue body with final decisions and leave a comment explaining the rationale/history
+4. Confirm base branch and create a `feature/*` branch from it
+5. Explore existing patterns (MVI, repo/DAO, UI reuse) and note exact files to touch
+6. Implement minimal changes in order: Domain → Data → Presentation
+7. Move any UI text to resources; keep Material 3 and theme usage
+8. Run tests/builds; if not possible, state the exact commands to run
+9. Commit changes (confirm whether to include `AGENTS.md` updates)
+10. Push branch to origin
+11. Create PR with correct base/head and include `Closes #issue-number`
+12. Review the PR, leave review comments if needed, fix issues, re-run tests, and commit
+13. Post test results as a PR comment
+14. End the flow only when no further fixes remain and tests/builds are green
 
 ---
 
