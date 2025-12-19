@@ -4,6 +4,11 @@ import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.enso.domain.exception.DuplicateQrException
+import com.enso.domain.model.GameType
+import com.enso.domain.model.LottoGame
+import com.enso.domain.model.LottoTicket
+import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.qrscan.parser.LottoQrParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -14,10 +19,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
-class QrScanViewModel @Inject constructor() : ViewModel() {
+class QrScanViewModel @Inject constructor(
+    private val saveLottoTicketUseCase: SaveLottoTicketUseCase
+) : ViewModel() {
 
     private val _state = MutableStateFlow(QrScanUiState())
     val state: StateFlow<QrScanUiState> = _state.asStateFlow()
@@ -34,6 +42,8 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
             is QrScanEvent.ProcessQrCode -> processQrCode(event.content, event.bounds)
             is QrScanEvent.UpdateDetectedBounds -> updateDetectedBounds(event.bounds)
             is QrScanEvent.RequestFocus -> requestFocus(event.x, event.y)
+            is QrScanEvent.ToggleListExpansion -> toggleListExpansion()
+            is QrScanEvent.SaveScannedTicket -> saveScannedTicket(event.qrUrl)
         }
     }
 
@@ -93,16 +103,17 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
             val ticketInfo = LottoQrParser.parse(content)
             Log.d("whk__", "ticketInfo : $ticketInfo")
             if (ticketInfo != null) {
-                // 성공 상태로 변경 (자동 종료하지 않고 상태만 설정)
+                // scannedResult를 먼저 설정
                 _state.update {
                     it.copy(
                         scannedResult = ticketInfo,
-                        isScanning = false,
                         detectedBounds = bounds,
-                        isSuccess = true,
+                        isScanning = false,
                         error = null
                     )
                 }
+                // 즉시 저장 시도
+                onEvent(QrScanEvent.SaveScannedTicket(content))
             } else {
                 _state.update {
                     it.copy(
@@ -115,6 +126,70 @@ class QrScanViewModel @Inject constructor() : ViewModel() {
                 _effect.send(QrScanEffect.ShowError("유효하지 않은 로또 QR 코드입니다"))
             }
         }
+    }
+
+    private fun saveScannedTicket(qrUrl: String) {
+        val ticketInfo = _state.value.scannedResult ?: return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true) }
+
+            val games = ticketInfo.games.mapIndexed { index, gameInfo ->
+                LottoGame(
+                    gameLabel = ('A' + index).toString(),
+                    numbers = gameInfo.numbers,
+                    gameType = if (gameInfo.isAuto) GameType.AUTO else GameType.MANUAL
+                )
+            }
+
+            val ticket = LottoTicket(
+                round = ticketInfo.round,
+                registeredDate = Date(),
+                games = games,
+                qrUrl = qrUrl
+            )
+
+            saveLottoTicketUseCase(ticket).fold(
+                onSuccess = {
+                    val summary = SavedTicketSummary(
+                        round = ticketInfo.round,
+                        gameCount = ticketInfo.games.size
+                    )
+                    _state.update {
+                        it.copy(
+                            isSaving = false,
+                            savedTickets = it.savedTickets + summary,
+                            lastSavedTicket = summary,
+                            scannedResult = null,
+                            detectedBounds = null,
+                            isSuccess = false,
+                            isScanning = true
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isSaving = false) }
+                    if (error is DuplicateQrException) {
+                        _effect.send(QrScanEffect.ShowDuplicateMessage)
+                    } else {
+                        _effect.send(QrScanEffect.ShowError(error.message ?: "저장 실패"))
+                    }
+                    // 스캔 재개
+                    _state.update {
+                        it.copy(
+                            scannedResult = null,
+                            detectedBounds = null,
+                            isSuccess = false,
+                            isScanning = true
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    private fun toggleListExpansion() {
+        _state.update { it.copy(isListExpanded = !it.isListExpanded) }
     }
 
     private fun requestFocus(x: Float, y: Float) {

@@ -5,6 +5,7 @@ import com.enso.data.mapper.toGameEntity
 import com.enso.data.mapper.toDomain
 import com.enso.data.mapper.toTicketEntity
 import com.enso.di.IoDispatcher
+import com.enso.domain.exception.DuplicateQrException
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
 import com.enso.domain.repository.LottoTicketRepository
@@ -23,6 +24,9 @@ class LottoTicketRepositoryImpl @Inject constructor(
         runCatching {
             // 1. 티켓 먼저 저장 -> ticketId 획득
             val ticketId = localDataSource.insertTicket(ticket.toTicketEntity())
+            if (ticketId == -1L) {
+                throw DuplicateQrException()
+            }
 
             // 2. 게임들 저장 (ticketId 사용)
             val gameEntities = ticket.games.map { it.toGameEntity(ticketId) }

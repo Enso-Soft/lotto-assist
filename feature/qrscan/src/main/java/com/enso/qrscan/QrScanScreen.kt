@@ -20,14 +20,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
+import kotlinx.coroutines.delay
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -148,24 +151,10 @@ fun QrScanScreen(
                 is QrScanEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
+                is QrScanEffect.ShowDuplicateMessage -> {
+                    snackbarHostState.showSnackbar("이미 추가된 QR입니다")
+                }
             }
-        }
-    }
-
-    // 성공 시: 화면은 유지하고 하단 스낵바 액션으로 "당첨 여부 확인"을 진행
-    LaunchedEffect(uiState.scannedResult) {
-        val ticketInfo = uiState.scannedResult ?: return@LaunchedEffect
-
-        val result = snackbarHostState.showSnackbar(
-            message = "QR 코드 인식 완료",
-            actionLabel = "로또 당첨 여부 확인하기",
-            withDismissAction = true,
-            duration = SnackbarDuration.Indefinite
-        )
-
-        when (result) {
-            SnackbarResult.ActionPerformed -> onScanSuccess(ticketInfo)
-            SnackbarResult.Dismissed -> viewModel.onEvent(QrScanEvent.ResetAfterSuccess)
         }
     }
 
@@ -244,30 +233,59 @@ fun QrScanScreen(
             )
         }
 
-        // 하단 안내 문구
+        // 하단 UI: 안내 문구 + 요약 카드 + 최소화된 목록
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(bottom = 80.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // 최소화된 목록 (저장된 QR이 있을 때만 표시)
+            if (uiState.savedTickets.isNotEmpty()) {
+                MinimizedSavedList(
+                    count = uiState.savedTickets.size,
+                    isExpanded = uiState.isListExpanded,
+                    savedTickets = uiState.savedTickets,
+                    onToggle = { viewModel.onEvent(QrScanEvent.ToggleListExpansion) }
+                )
+            }
+
+            // 하단 안내 문구
             Text(
-                text = if (uiState.isSuccess) {
-                    "QR 코드 인식 완료"
+                text = if (uiState.isSaving) {
+                    "저장 중..."
+                } else if (uiState.savedTickets.isNotEmpty()) {
+                    "다음 QR 코드를 비춰주세요"
                 } else {
                     "로또 용지의 QR 코드를 비춰주세요"
                 },
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (uiState.isSuccess) {
-                    QrOverlayStyle.successColor
-                } else {
-                    Color.White
-                },
-                fontWeight = if (uiState.isSuccess) FontWeight.SemiBold else FontWeight.Normal,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
+        }
+
+        // 요약 카드 (저장 직후 일시적으로 표시)
+        uiState.lastSavedTicket?.let { lastSaved ->
+            var isVisible by remember(lastSaved) { mutableStateOf(true) }
+
+            LaunchedEffect(lastSaved) {
+                isVisible = true
+                delay(3000)
+                isVisible = false
+            }
+
+            if (isVisible) {
+                SaveSuccessCard(
+                    ticket = lastSaved,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = if (uiState.savedTickets.isEmpty()) 160.dp else 240.dp)
+                )
+            }
         }
 
         // 스낵바 호스트
@@ -735,5 +753,107 @@ private fun processImageProxy(
             }
     } else {
         imageProxy.close()
+    }
+}
+
+@Composable
+private fun SaveSuccessCard(
+    ticket: SavedTicketSummary,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.Card(
+        modifier = modifier
+            .fillMaxWidth(0.8f),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = QrOverlayStyle.successColor.copy(alpha = 0.95f)
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "✓",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "${ticket.round}회 ${ticket.gameCount}게임 저장됨",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "계속 스캔할 수 있습니다",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MinimizedSavedList(
+    count: Int,
+    isExpanded: Boolean,
+    savedTickets: List<SavedTicketSummary>,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.Card(
+        onClick = onToggle,
+        modifier = modifier
+            .fillMaxWidth(0.9f),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = Color.Black.copy(alpha = 0.7f)
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // 요약 헤더
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${count}장 저장됨",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (isExpanded) "▼" else "▲",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White
+                )
+            }
+
+            // 확장된 목록
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                savedTickets.forEach { ticket ->
+                    androidx.compose.material3.HorizontalDivider(
+                        color = Color.White.copy(alpha = 0.2f),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        text = "${ticket.round}회 ${ticket.gameCount}게임",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+            }
+        }
     }
 }

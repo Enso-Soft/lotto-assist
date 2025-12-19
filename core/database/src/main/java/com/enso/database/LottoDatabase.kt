@@ -15,7 +15,7 @@ import com.enso.database.entity.LottoTicketEntity
         LottoTicketEntity::class,
         LottoGameEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class LottoDatabase : RoomDatabase() {

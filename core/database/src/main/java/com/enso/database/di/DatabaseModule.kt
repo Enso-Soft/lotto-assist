@@ -3,6 +3,7 @@ package com.enso.database.di
 import android.content.Context
 import androidx.room.Room
 import com.enso.database.LottoDatabase
+import com.enso.database.MIGRATION_3_4
 import com.enso.database.dao.LottoGameDao
 import com.enso.database.dao.LottoResultDao
 import com.enso.database.dao.LottoTicketDao
@@ -25,7 +26,7 @@ object DatabaseModule {
             LottoDatabase::class.java,
             "lotto_database"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_3_4)
             .build()
     }
 
