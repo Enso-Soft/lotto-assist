@@ -4,4 +4,7 @@
     <string name="dialog_delete_ticket_message">삭제한 번호는 복구할 수 없어요</string>
     <string name="dialog_delete_ticket_confirm">삭제하기</string>
     <string name="dialog_delete_ticket_cancel">취소</string>
+    <string name="my_lotto_title">내 로또</string>
+    <string name="my_lotto_view_all">전체보기</string>
+    <string name="my_lotto_empty">저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요</string>
 </resources>

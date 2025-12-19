@@ -1,9 +1,13 @@
 package com.enso.database.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "lotto_tickets")
+@Entity(
+    tableName = "lotto_tickets",
+    indices = [Index(value = ["qrUrl"], unique = true)]
+)
 data class LottoTicketEntity(
     @PrimaryKey(autoGenerate = true)
     val ticketId: Long = 0,

@@ -22,13 +22,11 @@ class LottoTicketRepositoryImpl @Inject constructor(
 
     override suspend fun saveTicket(ticket: LottoTicket): Result<Long> = withContext(ioDispatcher) {
         runCatching {
-            val qrUrl = ticket.qrUrl
-            if (!qrUrl.isNullOrBlank() && localDataSource.existsByQrUrl(qrUrl)) {
-                throw DuplicateQrException()
-            }
-
             // 1. 티켓 먼저 저장 -> ticketId 획득
             val ticketId = localDataSource.insertTicket(ticket.toTicketEntity())
+            if (ticketId == -1L) {
+                throw DuplicateQrException()
+            }
 
             // 2. 게임들 저장 (ticketId 사용)
             val gameEntities = ticket.games.map { it.toGameEntity(ticketId) }

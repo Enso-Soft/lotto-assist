@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import com.enso.home.ui.theme.CardLight
 import com.enso.home.ui.theme.Primary
 import com.enso.home.ui.theme.TextMainLight
 import com.enso.home.ui.theme.TextSubLight
+import com.enso.ui.R
 import com.enso.util.format.formatDrawDate
 import java.text.NumberFormat
 import java.util.Date
@@ -69,14 +71,14 @@ fun MyLottoSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "내 로또",
+                stringResource(R.string.my_lotto_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextMainLight
             )
             if (showViewAll) {
                 Text(
-                    "전체보기",
+                    stringResource(R.string.my_lotto_view_all),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSubLight,
                     modifier = Modifier.clickable(onClick = onViewAll)
@@ -125,7 +127,7 @@ private fun EmptyTicketCard() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요",
+                stringResource(R.string.my_lotto_empty),
                 textAlign = TextAlign.Center,
                 color = TextSubLight,
                 fontSize = 14.sp

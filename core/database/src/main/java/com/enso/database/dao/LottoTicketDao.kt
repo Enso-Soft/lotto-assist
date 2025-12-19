@@ -2,6 +2,7 @@ package com.enso.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.enso.database.entity.LottoTicketEntity
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LottoTicketDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(ticket: LottoTicketEntity): Long
 
     @Query("DELETE FROM lotto_tickets WHERE ticketId = :ticketId")
@@ -38,7 +39,4 @@ interface LottoTicketDao {
 
     @Query("SELECT COUNT(*) FROM lotto_tickets")
     suspend fun getCount(): Int
-
-    @Query("SELECT EXISTS(SELECT 1 FROM lotto_tickets WHERE qrUrl = :qrUrl)")
-    suspend fun existsByQrUrl(qrUrl: String): Boolean
 }
