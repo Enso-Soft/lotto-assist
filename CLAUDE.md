@@ -3,11 +3,89 @@ Guidance for Claude Code (claude.ai/code) in this repository.
 
 **Language**: Always respond in Korean (한국어) unless explicitly asked otherwise.
 
+---
+
+## MCP Server Usage Guide
+
+This project leverages the following MCP servers to support efficient development:
+
+### Context7 (Code Context Search)
+**Purpose**: Search for up-to-date documentation, architecture patterns, and existing implementations in the project
+
+**When to use**:
+- Before implementing new features, to explore similar patterns
+- To verify how architecture layers interact with each other
+- To understand the complete implementation flow of a specific feature
+- To check naming conventions and code style
+
+**Usage examples**:
+```
+"Search for existing ViewModel MVI pattern implementations"
+"Check Repository interface and implementation patterns"
+"Find reusable Compose UI component patterns"
+```
+
+### Sequential Thinking (Structured Problem Solving)
+**Purpose**: Decompose complex tasks into logical steps for systematic approach
+
+**When to use**:
+- When implementing complex features spanning multiple architecture layers
+- When analyzing dependencies between multiple modules/layers
+- When analyzing impact scope for performance optimization, refactoring, etc.
+- When requirements are ambiguous or multi-step decision-making is needed
+
+**Usage examples**:
+```
+"Add new QR scan feature: step-by-step analysis from Domain → Data → Presentation"
+"Plan Room migration: impact scope, rollback strategy, test strategy"
+"Improve network error handling: design responsibility separation for each layer"
+```
+
+**Integrated workflow**:
+1. Use **Sequential Thinking** to decompose problems and establish a plan
+2. Use **Context7** to search for existing patterns/implementations
+3. **Step-by-Step implementation** (refer to Required workflow below)
+
+**IMPORTANT**: If you did not use or skipped MCP tools, you must explicitly explain the reason.
+- e.g., "Simple single-file modification, Sequential Thinking unnecessary"
+- e.g., "Completely new pattern, designing directly instead of Context7 search"
+- e.g., "Already read the file and understood the pattern"
+
+**Practical example**:
+```
+Request: "Add filtering feature to winning number history screen"
+
+1. [Using Sequential Thinking]
+   - Domain: Define FilterCriteria model, FilterHistoryUseCase
+   - Data: Add filter parameter to Repository
+   - Presentation: Add filter state to UI State, BottomSheet UI
+
+2. [Using Context7]
+   - "Search for BottomSheet filter UI implementation pattern"
+   - "Find examples of Repository method with parameters"
+   - "Check UiState immutable update pattern"
+
+3. [Implementation & Verification]
+   - Implement in order: Domain → Data → Presentation
+   - Verify compilation at each step
+   - Run final tests
+```
+
+---
+
 ## Non-negotiable rules (CRITICAL)
 
 ### 0) If unsure, ask first (NO GUESSING)
 - Do **not** invent APIs/classes/files. If something is unclear or missing, **ask questions** before coding.
 - If a requirement can be interpreted multiple ways, propose options and ask which one to implement.
+
+### 0-1) MCP usage declaration (REQUIRED)
+- You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
+- If you did not use MCP, you **must explain the reason**.
+- Example reasons:
+  - "Simple syntax fix, pattern search unnecessary"
+  - "1-2 line modification, structured thinking unnecessary"
+  - "Pattern already understood from previous conversation"
 
 ### 1) Read & Search before editing
 - Before changing a file: **open/read it first**. Never modify unseen code.
@@ -64,13 +142,16 @@ Ask questions when needed. Especially:
 - Data source truth (DB vs network vs cached)
 
 ### Step B) Explore
-- Locate existing patterns (MVI, repository, bottom sheets, list rendering).
+- **Use Context7**: Search for existing patterns (MVI, repository, bottom sheets, list rendering)
 - Identify exact files/modules to change.
+- Verify similar implementations exist and reuse them.
 
 ### Step C) Plan (must show a short plan)
+- **Use Sequential Thinking**: Decompose complex tasks step-by-step
 - Outline changes by layer/module.
 - Mention new/changed types (State/Event/Effect, UseCase, Repo methods).
 - List risks/assumptions.
+- Identify dependencies between layers.
 
 ### Step D) Implement incrementally
 - Implement smallest vertical slice first (domain → data → presentation only if needed).
