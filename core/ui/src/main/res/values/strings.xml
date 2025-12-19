@@ -7,4 +7,11 @@
     <string name="my_lotto_title">내 로또</string>
     <string name="my_lotto_view_all">전체보기</string>
     <string name="my_lotto_empty">저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요</string>
+    <string name="my_lotto_ticket_round">제 %1$d회</string>
+    <string name="my_lotto_ticket_registered">%1$s 등록</string>
+    <string name="my_lotto_ticket_delete">삭제</string>
+    <string name="my_lotto_prize_billion_won">%1$d억원</string>
+    <string name="my_lotto_prize_billion_ten_thousands">%1$d억 %2$s만원</string>
+    <string name="my_lotto_prize_ten_thousands">%1$s만원</string>
+    <string name="my_lotto_prize_won">%1$d원</string>
 </resources>

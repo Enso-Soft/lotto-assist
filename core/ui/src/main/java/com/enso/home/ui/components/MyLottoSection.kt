@@ -177,14 +177,17 @@ fun TicketCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "제 ${ticket.round}회",
+                        stringResource(R.string.my_lotto_ticket_round, ticket.round),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = TextMainLight
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "${formatDrawDate(ticket.registeredDate)} 등록",
+                        stringResource(
+                            R.string.my_lotto_ticket_registered,
+                            formatDrawDate(ticket.registeredDate)
+                        ),
                         fontSize = 11.sp,
                         color = TextSubLight
                     )
@@ -196,7 +199,7 @@ fun TicketCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "삭제",
+                            contentDescription = stringResource(R.string.my_lotto_ticket_delete),
                             tint = TextSubLight,
                             modifier = Modifier.size(18.dp)
                         )
@@ -310,6 +313,7 @@ fun TicketCard(
     }
 }
 
+@Composable
 private fun formatPrizeAmount(amount: Long): String {
     val billions = amount / 100_000_000
     val remainder = amount % 100_000_000
@@ -318,14 +322,18 @@ private fun formatPrizeAmount(amount: Long): String {
     return if (billions > 0) {
         if (tenThousands > 0) {
             val formatter = NumberFormat.getInstance(Locale.KOREA)
-            "${billions}억 ${formatter.format(tenThousands)}만원"
+            stringResource(
+                R.string.my_lotto_prize_billion_ten_thousands,
+                billions,
+                formatter.format(tenThousands)
+            )
         } else {
-            "${billions}억원"
+            stringResource(R.string.my_lotto_prize_billion_won, billions)
         }
     } else if (tenThousands > 0) {
         val formatter = NumberFormat.getInstance(Locale.KOREA)
-        "${formatter.format(tenThousands)}만원"
+        stringResource(R.string.my_lotto_prize_ten_thousands, formatter.format(tenThousands))
     } else {
-        "${amount}원"
+        stringResource(R.string.my_lotto_prize_won, amount)
     }
 }
