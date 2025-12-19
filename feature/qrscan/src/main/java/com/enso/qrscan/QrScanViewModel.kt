@@ -118,14 +118,15 @@ class QrScanViewModel @Inject constructor(
                 // 마지막 처리한 QR URL 저장
                 lastProcessedQrUrl = content
 
-                // scannedResult를 먼저 설정
+                // 새로운 QR 처리 시작: 이전 결과 카드 즉시 제거
                 _state.update {
                     it.copy(
                         scannedResult = ticketInfo,
                         detectedBounds = bounds,
                         isScanning = false,
                         error = null,
-                        isCheckingWinning = true
+                        isCheckingWinning = true,
+                        lastSavedTicket = null  // 이전 카드 제거
                     )
                 }
 

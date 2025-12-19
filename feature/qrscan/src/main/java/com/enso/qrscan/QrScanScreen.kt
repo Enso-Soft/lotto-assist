@@ -268,17 +268,24 @@ fun QrScanScreen(
             )
         }
 
-        // 요약 카드 (저장 직후 일시적으로 표시)
+        // 요약 카드 (저장 직후 표시: 최소 5초 + QR이 사라질 때까지)
         uiState.lastSavedTicket?.let { lastSaved ->
-            var isVisible by remember(lastSaved) { mutableStateOf(true) }
+            var shouldShow by remember(lastSaved) { mutableStateOf(true) }
+            val showStartTime = remember(lastSaved) { System.currentTimeMillis() }
 
             LaunchedEffect(lastSaved) {
-                isVisible = true
-                delay(3000)
-                isVisible = false
+                // 100ms마다 체크하면서 숨김 조건 확인
+                while (shouldShow) {
+                    delay(100)
+                    val elapsed = System.currentTimeMillis() - showStartTime
+                    // 5초 경과 AND QR이 사라지면 숨김
+                    if (elapsed >= 5000 && uiState.detectedBounds == null) {
+                        shouldShow = false
+                    }
+                }
             }
 
-            if (isVisible) {
+            if (shouldShow) {
                 SaveSuccessCard(
                     ticket = lastSaved,
                     modifier = Modifier
