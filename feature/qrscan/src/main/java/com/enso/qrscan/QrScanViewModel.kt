@@ -34,6 +34,9 @@ class QrScanViewModel @Inject constructor(
     private val _effect = Channel<QrScanEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
+    // 마지막으로 처리한 QR URL (중복 방지용)
+    private var lastProcessedQrUrl: String? = null
+
     fun onEvent(event: QrScanEvent) {
         when (event) {
             is QrScanEvent.StartScan -> startScan()
@@ -102,10 +105,19 @@ class QrScanViewModel @Inject constructor(
     }
 
     private fun processQrCode(content: String, bounds: QrCodeBounds) {
+        // 마지막으로 처리한 QR과 같으면 무시
+        if (content == lastProcessedQrUrl) {
+            Log.d("whk__", "Same QR as last processed, ignoring")
+            return
+        }
+
         viewModelScope.launch {
             val ticketInfo = LottoQrParser.parse(content)
             Log.d("whk__", "ticketInfo : $ticketInfo")
             if (ticketInfo != null) {
+                // 마지막 처리한 QR URL 저장
+                lastProcessedQrUrl = content
+
                 // scannedResult를 먼저 설정
                 _state.update {
                     it.copy(
