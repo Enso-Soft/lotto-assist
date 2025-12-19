@@ -18,12 +18,7 @@ This project leverages the following MCP servers to support efficient developmen
 - To understand the complete implementation flow of a specific feature
 - To check naming conventions and code style
 
-**Usage examples**:
-```
-"Search for existing ViewModel MVI pattern implementations"
-"Check Repository interface and implementation patterns"
-"Find reusable Compose UI component patterns"
-```
+**Usage example**: `"Search for existing ViewModel MVI pattern implementations"`
 
 ### Sequential Thinking (Structured Problem Solving)
 **Purpose**: Decompose complex tasks into logical steps for systematic approach
@@ -34,12 +29,7 @@ This project leverages the following MCP servers to support efficient developmen
 - When analyzing impact scope for performance optimization, refactoring, etc.
 - When requirements are ambiguous or multi-step decision-making is needed
 
-**Usage examples**:
-```
-"Add new QR scan feature: step-by-step analysis from Domain → Data → Presentation"
-"Plan Room migration: impact scope, rollback strategy, test strategy"
-"Improve network error handling: design responsibility separation for each layer"
-```
+**Usage example**: `"Add new QR scan feature: step-by-step analysis from Domain → Data → Presentation"`
 
 **Integrated workflow**:
 1. Use **Sequential Thinking** to decompose problems and establish a plan
@@ -51,25 +41,10 @@ This project leverages the following MCP servers to support efficient developmen
 - e.g., "Completely new pattern, designing directly instead of Context7 search"
 - e.g., "Already read the file and understood the pattern"
 
-**Practical example**:
-```
-Request: "Add filtering feature to winning number history screen"
-
-1. [Using Sequential Thinking]
-   - Domain: Define FilterCriteria model, FilterHistoryUseCase
-   - Data: Add filter parameter to Repository
-   - Presentation: Add filter state to UI State, BottomSheet UI
-
-2. [Using Context7]
-   - "Search for BottomSheet filter UI implementation pattern"
-   - "Find examples of Repository method with parameters"
-   - "Check UiState immutable update pattern"
-
-3. [Implementation & Verification]
-   - Implement in order: Domain → Data → Presentation
-   - Verify compilation at each step
-   - Run final tests
-```
+**Example workflow**: "Add filtering feature to winning number history screen"
+1. Sequential Thinking → Plan layers (Domain: FilterCriteria, Data: Repo param, Presentation: UI State)
+2. Context7 → Search patterns ("BottomSheet filter UI", "UiState immutable update")
+3. Implement → Domain → Data → Presentation, verify at each step
 
 ---
 
@@ -81,11 +56,7 @@ Request: "Add filtering feature to winning number history screen"
 
 ### 0-1) MCP usage declaration (REQUIRED)
 - You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
-- If you did not use MCP, you **must explain the reason**.
-- Example reasons:
-  - "Simple syntax fix, pattern search unnecessary"
-  - "1-2 line modification, structured thinking unnecessary"
-  - "Pattern already understood from previous conversation"
+- If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
 
 ### 1) Read & Search before editing
 - Before changing a file: **open/read it first**. Never modify unseen code.
@@ -142,16 +113,15 @@ Ask questions when needed. Especially:
 - Data source truth (DB vs network vs cached)
 
 ### Step B) Explore
-- **Use Context7**: Search for existing patterns (MVI, repository, bottom sheets, list rendering)
-- Identify exact files/modules to change.
-- Verify similar implementations exist and reuse them.
+- Search for existing patterns (MVI, repository, bottom sheets, list rendering)
+- Identify exact files/modules to change
+- Verify similar implementations exist and reuse them
 
 ### Step C) Plan (must show a short plan)
-- **Use Sequential Thinking**: Decompose complex tasks step-by-step
-- Outline changes by layer/module.
-- Mention new/changed types (State/Event/Effect, UseCase, Repo methods).
-- List risks/assumptions.
-- Identify dependencies between layers.
+- Outline changes by layer/module
+- Mention new/changed types (State/Event/Effect, UseCase, Repo methods)
+- List risks/assumptions
+- Identify dependencies between layers
 
 ### Step D) Implement incrementally
 - Implement smallest vertical slice first (domain → data → presentation only if needed).
@@ -169,22 +139,15 @@ Run commands and fix until green:
 
 ---
 
-## Build / Test commands (canonical)
+## Build / Test commands
 
 ```bash
-# Build
 ./gradlew clean build
 ./gradlew assembleDebug
-
-# Unit tests
 ./gradlew test
 ./gradlew :core:domain:test
-
-# Quality gate
 ./gradlew check
-
-# Instrumentation (only if device/emulator available)
-./gradlew connectedAndroidTest
+./gradlew connectedAndroidTest  # Only if device/emulator available
 ```
 
 ## Implementation conventions
@@ -217,33 +180,19 @@ Run commands and fix until green:
 - Base: https://www.dhlottery.co.kr/
 - Draw result: /common.do?method=getLottoNumber&drwNo={drawNo}
 
-### Ball color ranges
-- 1–10 Yellow
-- 11–20 Blue
-- 21–30 Red
-- 31–40 Gray
-- 41–45 Green
-- Use theme-friendly colors (consider dark mode contrast).
-
 ### QR parsing
-- Implemented under feature/qrscan.
-- Validate: 1–45 range + no duplicates.
+- Implemented under feature/qrscan
+- Validate: 1–45 range + no duplicates
+- Ball colors (1-10: Yellow, 11-20: Blue, 21-30: Red, 31-40: Gray, 41-45: Green) - use theme-friendly colors
 
 ---
 
 ## Forbidden patterns
 
-**Never**
-- God objects
-- Storing Activity/Context long-term
-- Blocking main thread with IO/DB/network
-- GlobalScope
-- Manual singletons (use Hilt)
-
-**Avoid**
-- Deprecated APIs
-- Hardcoded strings/colors
-- Duplicate code, unnecessary abstraction
+- God objects, storing Activity/Context long-term
+- Blocking main thread with IO/DB/network, GlobalScope
+- Manual singletons (use Hilt), deprecated APIs
+- Hardcoded strings/colors, duplicate code, unnecessary abstraction
 
 ---
 
