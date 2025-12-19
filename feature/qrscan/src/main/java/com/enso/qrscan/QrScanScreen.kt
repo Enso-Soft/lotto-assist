@@ -296,6 +296,15 @@ fun QrScanScreen(
                 .padding(bottom = 80.dp)
         )
     }
+
+    // 중복 확인 다이얼로그
+    uiState.duplicateConfirmation?.let { confirmation ->
+        DuplicateConfirmationDialog(
+            round = confirmation.existingRound,
+            onConfirm = { viewModel.onEvent(QrScanEvent.ConfirmDuplicateSave) },
+            onDismiss = { viewModel.onEvent(QrScanEvent.CancelDuplicateSave) }
+        )
+    }
 }
 
 @Composable
@@ -790,6 +799,38 @@ private fun SaveSuccessCard(
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
+
+                // 당첨 결과 표시
+                when {
+                    ticket.winningResults != null && ticket.winningResults.isNotEmpty() -> {
+                        val winningGames = ticket.winningResults.filter { it.rank in 1..5 }
+                        if (winningGames.isNotEmpty()) {
+                            val winningText = winningGames.joinToString(", ") { game ->
+                                "${game.gameLabel}: ${game.rank}등"
+                            }
+                            Text(
+                                text = "당첨: $winningText",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Yellow,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = "전체 낙첨",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    ticket.winningCheckFailed -> {
+                        Text(
+                            text = "당첨 확인 불가 (추첨 전 또는 네트워크 오류)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
                 Text(
                     text = "계속 스캔할 수 있습니다",
                     style = MaterialTheme.typography.bodySmall,
@@ -856,4 +897,31 @@ private fun MinimizedSavedList(
             }
         }
     }
+}
+
+@Composable
+private fun DuplicateConfirmationDialog(
+    round: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "중복된 QR 코드")
+        },
+        text = {
+            Text(text = "${round}회 QR 코드가 이미 저장되어 있습니다.\n그래도 저장하시겠습니까? (기존 데이터를 덮어씁니다)")
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onConfirm) {
+                Text(text = "그래도 저장")
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(text = "취소")
+            }
+        }
+    )
 }

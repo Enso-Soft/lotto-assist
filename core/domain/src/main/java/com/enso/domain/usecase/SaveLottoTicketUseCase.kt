@@ -10,4 +10,8 @@ class SaveLottoTicketUseCase @Inject constructor(
     suspend operator fun invoke(ticket: LottoTicket): Result<Long> {
         return repository.saveTicket(ticket)
     }
+
+    suspend fun deleteTicketByQrUrl(qrUrl: String): Result<Unit> {
+        return repository.deleteTicketByQrUrl(qrUrl)
+    }
 }

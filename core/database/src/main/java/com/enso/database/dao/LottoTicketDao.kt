@@ -16,6 +16,12 @@ interface LottoTicketDao {
     @Query("DELETE FROM lotto_tickets WHERE ticketId = :ticketId")
     suspend fun delete(ticketId: Long)
 
+    @Query("DELETE FROM lotto_tickets WHERE qrUrl = :qrUrl")
+    suspend fun deleteByQrUrl(qrUrl: String)
+
+    @Query("SELECT * FROM lotto_tickets WHERE qrUrl = :qrUrl LIMIT 1")
+    suspend fun getTicketByQrUrl(qrUrl: String): LottoTicketEntity?
+
     @Query("SELECT * FROM lotto_tickets ORDER BY registeredDate DESC")
     fun getAllTicketsByRegisteredDateDesc(): Flow<List<LottoTicketEntity>>
 

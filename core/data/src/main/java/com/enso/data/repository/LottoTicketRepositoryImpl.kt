@@ -42,6 +42,17 @@ class LottoTicketRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteTicketByQrUrl(qrUrl: String): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            // 먼저 해당 티켓을 조회하여 존재하는지 확인
+            val existingTicket = localDataSource.getTicketByQrUrl(qrUrl)
+            if (existingTicket != null) {
+                // 티켓 삭제 (CASCADE로 연결된 게임들도 자동 삭제됨)
+                localDataSource.deleteTicketByQrUrl(qrUrl)
+            }
+        }
+    }
+
     override fun getAllTickets(sortType: TicketSortType): Flow<List<LottoTicket>> {
         return localDataSource.getAllTickets(sortType).map { ticketEntities ->
             ticketEntities.map { ticketEntity ->

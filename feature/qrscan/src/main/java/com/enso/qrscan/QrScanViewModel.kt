@@ -24,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class QrScanViewModel @Inject constructor(
-    private val saveLottoTicketUseCase: SaveLottoTicketUseCase
+    private val saveLottoTicketUseCase: SaveLottoTicketUseCase,
+    private val getLottoResultUseCase: com.enso.domain.usecase.GetLottoResultUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(QrScanUiState())
@@ -43,7 +44,9 @@ class QrScanViewModel @Inject constructor(
             is QrScanEvent.UpdateDetectedBounds -> updateDetectedBounds(event.bounds)
             is QrScanEvent.RequestFocus -> requestFocus(event.x, event.y)
             is QrScanEvent.ToggleListExpansion -> toggleListExpansion()
-            is QrScanEvent.SaveScannedTicket -> saveScannedTicket(event.qrUrl)
+            is QrScanEvent.SaveScannedTicket -> saveScannedTicket(event.qrUrl, event.forceOverwrite)
+            is QrScanEvent.ConfirmDuplicateSave -> confirmDuplicateSave()
+            is QrScanEvent.CancelDuplicateSave -> cancelDuplicateSave()
         }
     }
 
@@ -109,10 +112,22 @@ class QrScanViewModel @Inject constructor(
                         scannedResult = ticketInfo,
                         detectedBounds = bounds,
                         isScanning = false,
-                        error = null
+                        error = null,
+                        isCheckingWinning = true
                     )
                 }
-                // 즉시 저장 시도
+
+                // 당첨 확인 (비동기로 수행하되, 실패해도 저장은 진행)
+                val winningResults = checkWinning(ticketInfo)
+
+                _state.update {
+                    it.copy(
+                        isCheckingWinning = false,
+                        currentWinningResults = winningResults
+                    )
+                }
+
+                // 즉시 저장 시도 (당첨 정보와 함께)
                 onEvent(QrScanEvent.SaveScannedTicket(content))
             } else {
                 _state.update {
@@ -128,11 +143,47 @@ class QrScanViewModel @Inject constructor(
         }
     }
 
-    private fun saveScannedTicket(qrUrl: String) {
+    private suspend fun checkWinning(ticketInfo: com.enso.qrscan.parser.LottoTicketInfo): List<GameWinningInfo>? {
+        return try {
+            val lottoResult = getLottoResultUseCase(ticketInfo.round).getOrNull() ?: return null
+
+            ticketInfo.games.mapIndexed { index, gameInfo ->
+                val matchedCount = gameInfo.numbers.count { it in lottoResult.numbers }
+                val bonusMatched = lottoResult.bonusNumber in gameInfo.numbers
+
+                val rank = when {
+                    matchedCount == 6 -> 1               // 1등: 6개 일치
+                    matchedCount == 5 && bonusMatched -> 2  // 2등: 5개 + 보너스
+                    matchedCount == 5 -> 3               // 3등: 5개 일치
+                    matchedCount == 4 -> 4               // 4등: 4개 일치
+                    matchedCount == 3 -> 5               // 5등: 3개 일치
+                    else -> 0                            // 낙첨
+                }
+
+                GameWinningInfo(
+                    gameLabel = ('A' + index).toString(),
+                    rank = rank,
+                    matchedCount = matchedCount,
+                    bonusMatched = bonusMatched
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("whk__", "당첨 확인 실패: ${e.message}")
+            null
+        }
+    }
+
+    private fun saveScannedTicket(qrUrl: String, forceOverwrite: Boolean = false) {
         val ticketInfo = _state.value.scannedResult ?: return
+        val winningResults = _state.value.currentWinningResults
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
+
+            // 강제 저장인 경우 기존 티켓 삭제
+            if (forceOverwrite) {
+                saveLottoTicketUseCase.deleteTicketByQrUrl(qrUrl)
+            }
 
             val games = ticketInfo.games.mapIndexed { index, gameInfo ->
                 LottoGame(
@@ -153,7 +204,9 @@ class QrScanViewModel @Inject constructor(
                 onSuccess = {
                     val summary = SavedTicketSummary(
                         round = ticketInfo.round,
-                        gameCount = ticketInfo.games.size
+                        gameCount = ticketInfo.games.size,
+                        winningResults = winningResults,
+                        winningCheckFailed = winningResults == null
                     )
                     _state.update {
                         it.copy(
@@ -163,27 +216,58 @@ class QrScanViewModel @Inject constructor(
                             scannedResult = null,
                             detectedBounds = null,
                             isSuccess = false,
-                            isScanning = true
+                            isScanning = true,
+                            currentWinningResults = null,
+                            duplicateConfirmation = null
                         )
                     }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isSaving = false) }
-                    if (error is DuplicateQrException) {
-                        _effect.send(QrScanEffect.ShowDuplicateMessage)
+                    if (error is DuplicateQrException && !forceOverwrite) {
+                        // 중복 확인 다이얼로그 표시
+                        _state.update {
+                            it.copy(
+                                duplicateConfirmation = DuplicateConfirmation(
+                                    qrUrl = qrUrl,
+                                    existingRound = ticketInfo.round
+                                )
+                            )
+                        }
+                    } else if (error is DuplicateQrException && forceOverwrite) {
+                        // forceOverwrite인데도 중복이면, 삭제가 실패했거나 다른 문제
+                        _effect.send(QrScanEffect.ShowError("저장 실패: 중복 제거 후에도 저장할 수 없습니다"))
+                        resumeScanning()
                     } else {
                         _effect.send(QrScanEffect.ShowError(error.message ?: "저장 실패"))
-                    }
-                    // 스캔 재개
-                    _state.update {
-                        it.copy(
-                            scannedResult = null,
-                            detectedBounds = null,
-                            isSuccess = false,
-                            isScanning = true
-                        )
+                        resumeScanning()
                     }
                 }
+            )
+        }
+    }
+
+    private fun confirmDuplicateSave() {
+        val confirmation = _state.value.duplicateConfirmation ?: return
+        // 강제 저장 수행
+        onEvent(QrScanEvent.SaveScannedTicket(confirmation.qrUrl, forceOverwrite = true))
+    }
+
+    private fun cancelDuplicateSave() {
+        _state.update {
+            it.copy(duplicateConfirmation = null)
+        }
+        resumeScanning()
+    }
+
+    private fun resumeScanning() {
+        _state.update {
+            it.copy(
+                scannedResult = null,
+                detectedBounds = null,
+                isSuccess = false,
+                isScanning = true,
+                currentWinningResults = null
             )
         }
     }

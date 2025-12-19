@@ -11,10 +11,24 @@ data class QrCodeBounds(
     val rotationDegrees: Int
 )
 
+data class GameWinningInfo(
+    val gameLabel: String,
+    val rank: Int,  // 0: 낙첨, 1~5: 등수
+    val matchedCount: Int,
+    val bonusMatched: Boolean = false
+)
+
 data class SavedTicketSummary(
     val round: Int,
     val gameCount: Int,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val winningResults: List<GameWinningInfo>? = null,  // null이면 당첨 확인 불가
+    val winningCheckFailed: Boolean = false  // 당첨 확인 실패 여부
+)
+
+data class DuplicateConfirmation(
+    val qrUrl: String,
+    val existingRound: Int
 )
 
 data class QrScanUiState(
@@ -30,7 +44,10 @@ data class QrScanUiState(
     val savedTickets: List<SavedTicketSummary> = emptyList(),
     val isListExpanded: Boolean = false,
     val isSaving: Boolean = false,
-    val lastSavedTicket: SavedTicketSummary? = null
+    val isCheckingWinning: Boolean = false,  // 당첨 확인 중
+    val currentWinningResults: List<GameWinningInfo>? = null,  // 현재 스캔된 티켓의 당첨 결과
+    val lastSavedTicket: SavedTicketSummary? = null,
+    val duplicateConfirmation: DuplicateConfirmation? = null  // 중복 확인 다이얼로그 상태
 )
 
 sealed class QrScanEvent {
@@ -42,7 +59,9 @@ sealed class QrScanEvent {
     data class UpdateDetectedBounds(val bounds: QrCodeBounds?) : QrScanEvent()
     data class RequestFocus(val x: Float, val y: Float) : QrScanEvent()
     data object ToggleListExpansion : QrScanEvent()
-    data class SaveScannedTicket(val qrUrl: String) : QrScanEvent()
+    data class SaveScannedTicket(val qrUrl: String, val forceOverwrite: Boolean = false) : QrScanEvent()
+    data object ConfirmDuplicateSave : QrScanEvent()  // 중복 저장 확인
+    data object CancelDuplicateSave : QrScanEvent()  // 중복 저장 취소
 }
 
 sealed class QrScanEffect {

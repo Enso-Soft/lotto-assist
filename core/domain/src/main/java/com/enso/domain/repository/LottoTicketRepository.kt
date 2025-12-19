@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface LottoTicketRepository {
     suspend fun saveTicket(ticket: LottoTicket): Result<Long>
     suspend fun deleteTicket(ticketId: Long): Result<Unit>
+    suspend fun deleteTicketByQrUrl(qrUrl: String): Result<Unit>
     fun getAllTickets(sortType: TicketSortType = TicketSortType.DEFAULT): Flow<List<LottoTicket>>
     fun getTicketsByRound(round: Int): Flow<List<LottoTicket>>
     suspend fun updateGameWinningRank(gameId: Long, rank: Int): Result<Unit>

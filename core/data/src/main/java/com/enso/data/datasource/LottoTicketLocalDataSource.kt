@@ -12,6 +12,8 @@ interface LottoTicketLocalDataSource {
     suspend fun insertTicket(ticket: LottoTicketEntity): Long
     suspend fun insertGames(games: List<LottoGameEntity>)
     suspend fun deleteTicket(ticketId: Long)
+    suspend fun deleteTicketByQrUrl(qrUrl: String)
+    suspend fun getTicketByQrUrl(qrUrl: String): LottoTicketEntity?
     fun getAllTickets(sortType: TicketSortType = TicketSortType.DEFAULT): Flow<List<LottoTicketEntity>>
     fun getTicketsByRound(round: Int): Flow<List<LottoTicketEntity>>
     suspend fun getTicketById(ticketId: Long): LottoTicketEntity?
@@ -34,6 +36,14 @@ class LottoTicketLocalDataSourceImpl @Inject constructor(
 
     override suspend fun deleteTicket(ticketId: Long) {
         ticketDao.delete(ticketId)
+    }
+
+    override suspend fun deleteTicketByQrUrl(qrUrl: String) {
+        ticketDao.deleteByQrUrl(qrUrl)
+    }
+
+    override suspend fun getTicketByQrUrl(qrUrl: String): LottoTicketEntity? {
+        return ticketDao.getTicketByQrUrl(qrUrl)
     }
 
     override fun getAllTickets(sortType: TicketSortType): Flow<List<LottoTicketEntity>> {
