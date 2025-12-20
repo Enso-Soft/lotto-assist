@@ -786,32 +786,58 @@ private fun processImageProxy(
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
-                // 로또 QR 코드를 찾아서 처리
-                for (barcode in barcodes) {
-                    if (barcode.format == Barcode.FORMAT_QR_CODE) {
-                        barcode.rawValue?.let { content ->
-                            if (content.contains("?v=")) {
-                                // 로또 QR 코드 발견
-                                barcode.cornerPoints?.let { points ->
-                                    if (points.size >= 4) {
-                                        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                                        val bounds = QrCodeBounds(
-                                            cornerPoints = points.map { point ->
-                                                PointF(point.x.toFloat(), point.y.toFloat())
-                                            },
-                                            sourceImageWidth = imageProxy.width,
-                                            sourceImageHeight = imageProxy.height,
-                                            rotationDegrees = rotationDegrees
-                                        )
-                                        // QR이 감지될 때만 bounds 업데이트
-                                        onBoundsUpdate(bounds)
-                                        onQrCodeDetected(content, bounds)
-                                    }
-                                }
-                            }
-                        }
+                // 로또 QR 코드를 찾아서 수집
+                val lottoQrCodes = barcodes
+                    .filter { it.format == Barcode.FORMAT_QR_CODE }
+                    .mapNotNull { barcode ->
+                        val content = barcode.rawValue ?: return@mapNotNull null
+                        if (!content.contains("?v=")) return@mapNotNull null
+                        
+                        val points = barcode.cornerPoints ?: return@mapNotNull null
+                        if (points.size < 4) return@mapNotNull null
+                        
+                        val cornerPoints = points.map { PointF(it.x.toFloat(), it.y.toFloat()) }
+                        
+                        // QR 코드의 면적 계산 (카메라와의 거리 추정용)
+                        val minX = cornerPoints.minOf { it.x }
+                        val maxX = cornerPoints.maxOf { it.x }
+                        val minY = cornerPoints.minOf { it.y }
+                        val maxY = cornerPoints.maxOf { it.y }
+                        val area = (maxX - minX) * (maxY - minY)
+                        
+                        // 화면 중앙과의 거리 계산
+                        val centerX = (minX + maxX) / 2f
+                        val centerY = (minY + maxY) / 2f
+                        val imageCenterX = imageProxy.width / 2f
+                        val imageCenterY = imageProxy.height / 2f
+                        val distanceFromCenter = kotlin.math.sqrt(
+                            (centerX - imageCenterX) * (centerX - imageCenterX) +
+                            (centerY - imageCenterY) * (centerY - imageCenterY)
+                        )
+                        
+                        Triple(
+                            content,
+                            QrCodeBounds(
+                                cornerPoints = cornerPoints,
+                                sourceImageWidth = imageProxy.width,
+                                sourceImageHeight = imageProxy.height,
+                                rotationDegrees = imageProxy.imageInfo.rotationDegrees
+                            ),
+                            Pair(area, distanceFromCenter)
+                        )
                     }
+                
+                // 여러 QR이 감지된 경우: 면적이 크고(가까운) + 중앙에 가까운 QR 선택
+                lottoQrCodes.maxByOrNull { (_, _, metrics) ->
+                    val (area, distanceFromCenter) = metrics
+                    // 면적에 높은 가중치, 중앙 거리에 낮은 패널티
+                    area - (distanceFromCenter * 0.3f)
+                }?.let { (content, bounds, _) ->
+                    // 가장 적합한 QR만 처리
+                    onBoundsUpdate(bounds)
+                    onQrCodeDetected(content, bounds)
                 }
+                
                 // 중요: QR이 감지되지 않아도 onBoundsUpdate(null)을 호출하지 않음
                 // 이렇게 하면 일시적인 인식 실패 시에도 박스가 유지되어 깜빡임 방지
             }

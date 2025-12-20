@@ -37,6 +37,9 @@ class QrScanViewModel @Inject constructor(
 
     // 마지막으로 처리한 QR URL (중복 방지용)
     private var lastProcessedQrUrl: String? = null
+    
+    // QR 처리 중 플래그 (다중 QR 동시 처리 방지)
+    private var isProcessingQr = false
 
     init {
         _state.update { it.copy(currentRound = LottoDate.getCurrentDrawNumber()) }
@@ -108,6 +111,12 @@ class QrScanViewModel @Inject constructor(
     }
 
     private fun processQrCode(content: String, bounds: QrCodeBounds) {
+        // 이미 처리 중이면 무시 (다중 QR 동시 처리 방지)
+        if (isProcessingQr) {
+            Log.d("whk__", "Already processing a QR, ignoring")
+            return
+        }
+        
         // 마지막으로 처리한 QR과 같으면 무시
         if (content == lastProcessedQrUrl) {
             Log.d("whk__", "Same QR as last processed, ignoring")
@@ -115,50 +124,61 @@ class QrScanViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val ticketInfo = LottoQrParser.parse(content)
-            Log.d("whk__", "ticketInfo : $ticketInfo")
-            if (ticketInfo != null) {
-                // 마지막 처리한 QR URL 저장
-                lastProcessedQrUrl = content
+            // 처리 시작
+            isProcessingQr = true
+            
+            try {
+                val ticketInfo = LottoQrParser.parse(content)
+                Log.d("whk__", "ticketInfo : $ticketInfo")
+                if (ticketInfo != null) {
+                    // 마지막 처리한 QR URL 저장
+                    lastProcessedQrUrl = content
 
-                // 새로운 QR 처리 시작: 이전 결과 카드 즉시 제거
-                _state.update {
-                    it.copy(
-                        scannedResult = ticketInfo,
-                        detectedBounds = bounds,
-                        isScanning = false,
-                        error = null,
-                        isCheckingWinning = true,
-                        lastSavedTicket = null  // 이전 카드 제거
-                    )
-                }
-                _effect.send(QrScanEffect.VibrateScan)
+                    // 새로운 QR 처리 시작: 이전 결과 카드 즉시 제거
+                    _state.update {
+                        it.copy(
+                            scannedResult = ticketInfo,
+                            detectedBounds = bounds,
+                            isScanning = false,
+                            error = null,
+                            isCheckingWinning = true,
+                            lastSavedTicket = null  // 이전 카드 제거
+                        )
+                    }
+                    _effect.send(QrScanEffect.VibrateScan)
 
-                // 당첨 확인 (비동기로 수행하되, 실패해도 저장은 진행)
-                val winningDetail = checkWinning(ticketInfo)
+                    // 당첨 확인 (비동기로 수행하되, 실패해도 저장은 진행)
+                    val winningDetail = checkWinning(ticketInfo)
 
-                _state.update {
-                    it.copy(
-                        isCheckingWinning = false,
-                        currentWinningDetail = winningDetail
-                    )
-                }
-                if (winningDetail?.gameResults?.any { it.rank in 1..5 } == true) {
-                    _effect.send(QrScanEffect.VibrateWinning)
-                }
+                    _state.update {
+                        it.copy(
+                            isCheckingWinning = false,
+                            currentWinningDetail = winningDetail
+                        )
+                    }
+                    if (winningDetail?.gameResults?.any { it.rank in 1..5 } == true) {
+                        _effect.send(QrScanEffect.VibrateWinning)
+                    }
 
-                // 즉시 저장 시도 (당첨 정보와 함께)
-                onEvent(QrScanEvent.SaveScannedTicket(content))
-            } else {
-                _state.update {
-                    it.copy(
-                        error = "유효하지 않은 로또 QR 코드입니다",
-                        isScanning = true,
-                        // detectedBounds는 유지 (박스가 사라지지 않도록)
-                        isSuccess = false
-                    )
+                    // 즉시 저장 시도 (당첨 정보와 함께)
+                    // 저장이 완료되면 saveScannedTicket 내부에서 isProcessingQr를 해제
+                    saveScannedTicket(content)
+                } else {
+                    _state.update {
+                        it.copy(
+                            error = "유효하지 않은 로또 QR 코드입니다",
+                            isScanning = true,
+                            // detectedBounds는 유지 (박스가 사라지지 않도록)
+                            isSuccess = false
+                        )
+                    }
+                    _effect.send(QrScanEffect.ShowError("유효하지 않은 로또 QR 코드입니다"))
+                    // 유효하지 않은 QR이면 즉시 플래그 해제
+                    isProcessingQr = false
                 }
-                _effect.send(QrScanEffect.ShowError("유효하지 않은 로또 QR 코드입니다"))
+            } catch (e: Exception) {
+                Log.e("whk__", "QR 처리 중 에러: ${e.message}")
+                isProcessingQr = false
             }
         }
     }
@@ -268,11 +288,13 @@ class QrScanViewModel @Inject constructor(
                             duplicateConfirmation = null
                         )
                     }
+                    // 저장 성공: 다음 QR 처리 가능
+                    isProcessingQr = false
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isSaving = false) }
                     if (error is DuplicateQrException && !forceOverwrite) {
-                        // 중복 확인 다이얼로그 표시
+                        // 중복 확인 다이얼로그 표시 - 플래그는 유지 (사용자가 선택할 때까지)
                         _state.update {
                             it.copy(
                                 duplicateConfirmation = DuplicateConfirmation(
@@ -281,13 +303,18 @@ class QrScanViewModel @Inject constructor(
                                 )
                             )
                         }
+                        // 중복 다이얼로그 상태에서는 플래그 유지 (다른 QR 인식 방지)
                     } else if (error is DuplicateQrException && forceOverwrite) {
                         // forceOverwrite인데도 중복이면, 삭제가 실패했거나 다른 문제
                         _effect.send(QrScanEffect.ShowError("저장 실패: 중복 제거 후에도 저장할 수 없습니다"))
                         resumeScanning()
+                        // 에러 발생: 다음 QR 처리 가능
+                        isProcessingQr = false
                     } else {
                         _effect.send(QrScanEffect.ShowError(error.message ?: "저장 실패"))
                         resumeScanning()
+                        // 에러 발생: 다음 QR 처리 가능
+                        isProcessingQr = false
                     }
                 }
             )
@@ -296,8 +323,8 @@ class QrScanViewModel @Inject constructor(
 
     private fun confirmDuplicateSave() {
         val confirmation = _state.value.duplicateConfirmation ?: return
-        // 강제 저장 수행
-        onEvent(QrScanEvent.SaveScannedTicket(confirmation.qrUrl, forceOverwrite = true))
+        // 강제 저장 수행 (saveScannedTicket에서 플래그 해제 처리)
+        saveScannedTicket(confirmation.qrUrl, forceOverwrite = true)
     }
 
     private fun cancelDuplicateSave() {
@@ -305,6 +332,8 @@ class QrScanViewModel @Inject constructor(
             it.copy(duplicateConfirmation = null)
         }
         resumeScanning()
+        // 취소: 다음 QR 처리 가능
+        isProcessingQr = false
     }
 
     private fun resumeScanning() {
