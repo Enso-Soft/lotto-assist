@@ -111,6 +111,18 @@ class QrScanViewModel @Inject constructor(
     }
 
     private fun processQrCode(content: String, bounds: QrCodeBounds) {
+        // 이미 스캔된 결과가 있으면 무시 (저장 중이거나 중복 확인 중)
+        if (_state.value.scannedResult != null) {
+            Log.d("whk__", "Already have scanned result, ignoring")
+            return
+        }
+        
+        // 중복 확인 다이얼로그가 떠있으면 무시
+        if (_state.value.duplicateConfirmation != null) {
+            Log.d("whk__", "Duplicate confirmation in progress, ignoring")
+            return
+        }
+        
         // 이미 처리 중이면 무시 (다중 QR 동시 처리 방지)
         if (isProcessingQr) {
             Log.d("whk__", "Already processing a QR, ignoring")
@@ -288,7 +300,7 @@ class QrScanViewModel @Inject constructor(
                             duplicateConfirmation = null
                         )
                     }
-                    // 저장 성공: 다음 QR 처리 가능
+                    // 저장 성공: 다음 QR 처리 가능 (lastProcessedQrUrl은 유지하여 같은 QR 재인식 방지)
                     isProcessingQr = false
                 },
                 onFailure = { error ->
@@ -308,12 +320,12 @@ class QrScanViewModel @Inject constructor(
                         // forceOverwrite인데도 중복이면, 삭제가 실패했거나 다른 문제
                         _effect.send(QrScanEffect.ShowError("저장 실패: 중복 제거 후에도 저장할 수 없습니다"))
                         resumeScanning()
-                        // 에러 발생: 다음 QR 처리 가능
+                        // 에러 발생: 다음 QR 처리 가능 (lastProcessedQrUrl은 유지)
                         isProcessingQr = false
                     } else {
                         _effect.send(QrScanEffect.ShowError(error.message ?: "저장 실패"))
                         resumeScanning()
-                        // 에러 발생: 다음 QR 처리 가능
+                        // 에러 발생: 다음 QR 처리 가능 (lastProcessedQrUrl은 유지)
                         isProcessingQr = false
                     }
                 }
@@ -323,17 +335,77 @@ class QrScanViewModel @Inject constructor(
 
     private fun confirmDuplicateSave() {
         val confirmation = _state.value.duplicateConfirmation ?: return
-        // 강제 저장 수행 (saveScannedTicket에서 플래그 해제 처리)
-        saveScannedTicket(confirmation.qrUrl, forceOverwrite = true)
+        
+        viewModelScope.launch {
+            // 중복 배너 먼저 제거 (애니메이션을 위한 시각적 피드백)
+            _state.update {
+                it.copy(duplicateConfirmation = null)
+            }
+            
+            // 약간의 딜레이 후 저장 (부드러운 전환)
+            delay(100)
+            
+            // 강제 저장 수행 (saveScannedTicket에서 플래그 해제 처리)
+            saveScannedTicket(confirmation.qrUrl, forceOverwrite = true)
+        }
     }
 
     private fun cancelDuplicateSave() {
-        _state.update {
-            it.copy(duplicateConfirmation = null)
+        val ticketInfo = _state.value.scannedResult ?: return
+        val winningDetail = _state.value.currentWinningDetail
+        val currentRound = _state.value.currentRound
+        
+        viewModelScope.launch {
+            // 중복 배너 먼저 제거 (저장 시와 동일한 흐름)
+            _state.update {
+                it.copy(duplicateConfirmation = null)
+            }
+            
+            // 약간의 딜레이 후 처리 (저장 시와 동일)
+            delay(100)
+            
+            // 스캔 결과를 표시용 리스트에 추가 (DB에는 저장하지 않음)
+            val drawDate = winningDetail?.drawDate
+                ?: if (ticketInfo.round > currentRound) {
+                    LottoDate.getDrawDateTimeByNumber(ticketInfo.round).time
+                } else {
+                    null
+                }
+            
+            val summary = SavedTicketSummary(
+                round = ticketInfo.round,
+                gameCount = ticketInfo.games.size,
+                games = ticketInfo.games.mapIndexed { index, gameInfo ->
+                    ScannedGameSummary(
+                        gameLabel = ('A' + index).toString(),
+                        numbers = gameInfo.numbers,
+                        isAuto = gameInfo.isAuto
+                    )
+                },
+                winningNumbers = winningDetail?.winningNumbers,
+                bonusNumber = winningDetail?.bonusNumber,
+                winningResults = winningDetail?.gameResults,
+                winningCheckFailed = winningDetail == null,
+                firstPrizeAmount = winningDetail?.firstPrizeAmount,
+                drawDate = drawDate
+            )
+            
+            // 저장 시와 동��하게 상태 업데이트 (DB 저장 없이 메모리에만)
+            _state.update {
+                it.copy(
+                    savedTickets = listOf(summary) + it.savedTickets,
+                    lastSavedTicket = summary,
+                    scannedResult = null,  // 임시 스캔 결과 제거
+                    detectedBounds = null,  // 박스 초기화
+                    isSuccess = false,
+                    isScanning = true,
+                    currentWinningDetail = null
+                )
+            }
+            
+            // 취소: 다음 QR 처리 가능 (lastProcessedQrUrl은 유지하여 같은 QR 재인식 방지)
+            isProcessingQr = false
         }
-        resumeScanning()
-        // 취소: 다음 QR 처리 가능
-        isProcessingQr = false
     }
 
     private fun resumeScanning() {

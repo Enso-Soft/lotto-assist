@@ -11,4 +11,8 @@
     <string name="qr_draw_schedule_hours_only_format">%1$d시간 남음</string>
     <string name="qr_draw_schedule_date_format">%1$s 추첨 예정</string>
     <string name="qr_draw_schedule_remaining_format">%1$d일 %2$d시간 남음</string>
+    <string name="qr_duplicate_prompt_title">제 %d회 로또가 이미 저장되어 있습니다</string>
+    <string name="qr_duplicate_prompt_message">저장하면 기존 데이터를 덮어씁니다. 내 로또에 저장하시겠습니까?</string>
+    <string name="qr_duplicate_action_skip">스킵</string>
+    <string name="qr_duplicate_action_save">저장</string>
 </resources>

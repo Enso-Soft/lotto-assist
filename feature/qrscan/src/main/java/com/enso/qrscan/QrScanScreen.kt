@@ -198,18 +198,21 @@ fun QrScanScreen(
     val density = LocalDensity.current
     var measuredHeight by remember { mutableStateOf(0) }
     
-    val hasTickets by remember { derivedStateOf { uiState.savedTickets.isNotEmpty() } }
+    // 스캔 중이거나 저장된 티켓이 있으면 패널 표시
+    val hasScannedResult = uiState.scannedResult != null
+    val hasSavedTickets = uiState.savedTickets.isNotEmpty()
+    val hasAnyTickets = hasScannedResult || hasSavedTickets
     
     // 카메라 축소 애니메이션
     val animatedHeight by animateDpAsState(
-        targetValue = if (hasTickets && measuredHeight > 0) measuredHeight.dp else 0.dp,
+        targetValue = if (hasAnyTickets && measuredHeight > 0) measuredHeight.dp else 0.dp,
         animationSpec = tween(durationMillis = 400),
         label = "resultPanelHeight"
     )
     
     // 결과 패널 슬라이드업 애니메이션
     val animatedOffset by animateDpAsState(
-        targetValue = if (hasTickets) 0.dp else (if (measuredHeight > 0) measuredHeight.dp else 500.dp),
+        targetValue = if (hasAnyTickets) 0.dp else (if (measuredHeight > 0) measuredHeight.dp else 500.dp),
         animationSpec = tween(durationMillis = 400),
         label = "resultPanelOffset"
     )
@@ -225,7 +228,10 @@ fun QrScanScreen(
             CameraPreview(
                 isFlashEnabled = uiState.isFlashEnabled,
                 onQrCodeDetected = { content, bounds ->
-                    if (!uiState.isSuccess) {
+                    // 스캔 중이고, 중복 확인도 없고, 현재 스캔된 결과도 없을 때만 QR 인식
+                    if (uiState.isScanning && 
+                        uiState.duplicateConfirmation == null && 
+                        uiState.scannedResult == null) {
                         viewModel.onEvent(QrScanEvent.ProcessQrCode(content, bounds))
                     }
                 },
@@ -314,10 +320,15 @@ fun QrScanScreen(
                 .fillMaxWidth()
                 .offset { IntOffset(0, with(density) { animatedOffset.toPx().toInt() }) }
         ) {
-            if (hasTickets) {
+            if (hasAnyTickets) {
                 SavedTicketsPager(
+                    scannedResult = uiState.scannedResult,
+                    winningDetail = uiState.currentWinningDetail,
                     tickets = uiState.savedTickets,
                     currentRound = uiState.currentRound,
+                    duplicateConfirmation = uiState.duplicateConfirmation,
+                    onConfirmDuplicate = { viewModel.onEvent(QrScanEvent.ConfirmDuplicateSave) },
+                    onCancelDuplicate = { viewModel.onEvent(QrScanEvent.CancelDuplicateSave) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFFF2F4F6))
@@ -331,15 +342,6 @@ fun QrScanScreen(
                 )
             }
         }
-    }
-
-    // 중복 확인 다이얼로그
-    uiState.duplicateConfirmation?.let { confirmation ->
-        DuplicateConfirmationDialog(
-            round = confirmation.existingRound,
-            onConfirm = { viewModel.onEvent(QrScanEvent.ConfirmDuplicateSave) },
-            onDismiss = { viewModel.onEvent(QrScanEvent.CancelDuplicateSave) }
-        )
     }
 }
 
@@ -856,27 +858,65 @@ private fun processImageProxy(
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun SavedTicketsPager(
+    scannedResult: com.enso.qrscan.parser.LottoTicketInfo?,
+    winningDetail: TicketWinningDetail?,
     tickets: List<SavedTicketSummary>,
     currentRound: Int,
+    duplicateConfirmation: DuplicateConfirmation?,
+    onConfirmDuplicate: () -> Unit,
+    onCancelDuplicate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
     val cardWidth = 300.dp
     
+    // 스캔된 결과를 임시 아이템으로 변환
+    val scannedTicketSummary = remember(scannedResult, winningDetail, currentRound) {
+        scannedResult?.let { ticketInfo ->
+            SavedTicketSummary(
+                round = ticketInfo.round,
+                gameCount = ticketInfo.games.size,
+                games = ticketInfo.games.mapIndexed { index, gameInfo ->
+                    ScannedGameSummary(
+                        gameLabel = ('A' + index).toString(),
+                        numbers = gameInfo.numbers,
+                        isAuto = gameInfo.isAuto
+                    )
+                },
+                timestamp = System.currentTimeMillis(),
+                winningNumbers = winningDetail?.winningNumbers,
+                bonusNumber = winningDetail?.bonusNumber,
+                winningResults = winningDetail?.gameResults,
+                winningCheckFailed = winningDetail == null && ticketInfo.round <= currentRound,
+                firstPrizeAmount = winningDetail?.firstPrizeAmount,
+                drawDate = winningDetail?.drawDate
+            )
+        }
+    }
+    
+    // 스캔된 아이템을 맨 앞에 추가한 전체 리스트
+    val allItems = remember(scannedTicketSummary, tickets) {
+        if (scannedTicketSummary != null) {
+            listOf(scannedTicketSummary) + tickets
+        } else {
+            tickets
+        }
+    }
+    
     // 이전 티켓 개수를 추적하여 새 아이템 추가 감지
     var previousSize by remember { mutableStateOf(0) }
     
-    LaunchedEffect(tickets.size) {
-        if (tickets.isNotEmpty()) {
+    LaunchedEffect(allItems.size) {
+        if (allItems.isNotEmpty()) {
             // 첫 아이템은 애니메이션 없이 즉시 이동 (패널 슬라이드업과 동시)
             if (previousSize == 0) {
                 listState.scrollToItem(0)
             } 
             // 이후 추가되는 아이템은 부드럽게 애니메이션 스크롤
-            else if (tickets.size > previousSize) {
+            else if (allItems.size > previousSize) {
                 listState.animateScrollToItem(0)
             }
-            previousSize = tickets.size
+            previousSize = allItems.size
         }
     }
 
@@ -918,14 +958,26 @@ private fun SavedTicketsPager(
             verticalAlignment = Alignment.Bottom
         ) {
             items(
-                items = tickets,
+                items = allItems,
                 key = { it.timestamp }
             ) { ticket ->
+                val isScannedItem = scannedTicketSummary != null && 
+                                   ticket.timestamp == scannedTicketSummary.timestamp
                 QrTicketCard(
                     ticket = ticket,
                     currentRound = currentRound,
+                    duplicateConfirmation = if (isScannedItem) duplicateConfirmation else null,
+                    onConfirmDuplicate = onConfirmDuplicate,
+                    onCancelDuplicate = onCancelDuplicate,
                     modifier = Modifier
-                        .animateItem()
+                        .animateItem(
+                            fadeInSpec = tween(durationMillis = 300),
+                            fadeOutSpec = tween(durationMillis = 300),
+                            placementSpec = androidx.compose.animation.core.spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
                         .width(cardWidth)
                 )
             }
@@ -937,6 +989,9 @@ private fun SavedTicketsPager(
 private fun QrTicketCard(
     ticket: SavedTicketSummary,
     currentRound: Int,
+    duplicateConfirmation: DuplicateConfirmation?,
+    onConfirmDuplicate: () -> Unit,
+    onCancelDuplicate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val winningNumbers = remember(ticket.winningNumbers) { ticket.winningNumbers.orEmpty() }
@@ -966,10 +1021,36 @@ private fun QrTicketCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .wrapContentHeight(),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            // 중복 확인 배너 (빠른 애니메이션으로 출렁거림 최소화)
+            AnimatedVisibility(
+                visible = duplicateConfirmation != null,
+                enter = androidx.compose.animation.expandVertically(
+                    animationSpec = tween(durationMillis = 200, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(durationMillis = 150)),
+                exit = androidx.compose.animation.shrinkVertically(
+                    animationSpec = tween(durationMillis = 200, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(durationMillis = 150))
+            ) {
+                if (duplicateConfirmation != null) {
+                    DuplicateConfirmationBanner(
+                        round = duplicateConfirmation.existingRound,
+                        onConfirm = onConfirmDuplicate,
+                        onSkip = onCancelDuplicate
+                    )
+                }
+            }
+            
+            // 티켓 내용
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1124,6 +1205,80 @@ private fun QrTicketCard(
                     }
                 }
 
+            }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DuplicateConfirmationBanner(
+    round: Int,
+    onConfirm: () -> Unit,
+    onSkip: () -> Unit
+) {
+    val qrPrimary = colorResource(R.color.qr_primary_blue)
+    val warningColor = Color(0xFFFF9800)
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(warningColor.copy(alpha = 0.1f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "⚠️",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = stringResource(R.string.qr_duplicate_prompt_title, round),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        Text(
+            text = stringResource(R.string.qr_duplicate_prompt_message),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = onSkip,
+                modifier = Modifier.weight(1f),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.qr_duplicate_action_skip),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            
+            androidx.compose.material3.Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = qrPrimary
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.qr_duplicate_action_save),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
@@ -1301,29 +1456,4 @@ private fun MinimizedSavedList(
     }
 }
 
-@Composable
-private fun DuplicateConfirmationDialog(
-    round: Int,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = "중복된 QR 코드")
-        },
-        text = {
-            Text(text = "${round}회 QR 코드가 이미 저장되어 있습니다.\n그래도 저장하시겠습니까? (기존 데이터를 덮어씁니다)")
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = onConfirm) {
-                Text(text = "그래도 저장")
-            }
-        },
-        dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(text = "취소")
-            }
-        }
-    )
-}
+
