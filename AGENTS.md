@@ -90,6 +90,7 @@ This project leverages the following MCP servers to support efficient developmen
 - If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
 
 ### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
+- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
 - If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
 - If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
 

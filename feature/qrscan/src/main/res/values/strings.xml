@@ -7,4 +7,8 @@
     <string name="qr_result_rank_format">%d등</string>
     <string name="qr_result_prize_4th">50,000원</string>
     <string name="qr_result_prize_5th">5,000원</string>
+    <string name="qr_draw_schedule_format">%1$s 추첨 예정 %2$d일 %3$d시간 남음</string>
+    <string name="qr_draw_schedule_hours_only_format">%1$d시간 남음</string>
+    <string name="qr_draw_schedule_date_format">%1$s 추첨 예정</string>
+    <string name="qr_draw_schedule_remaining_format">%1$d일 %2$d시간 남음</string>
 </resources>

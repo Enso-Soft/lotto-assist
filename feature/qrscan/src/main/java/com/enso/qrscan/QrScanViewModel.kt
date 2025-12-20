@@ -62,9 +62,8 @@ class QrScanViewModel @Inject constructor(
         _state.update {
             it.copy(
                 isScanning = true,
-                error = null,
-                detectedBounds = null,
-                isCurrentlyDetected = false
+                error = null
+                // detectedBounds는 유지 (새 스캔 시에도 이전 박스 위치 유지)
             )
         }
     }
@@ -72,9 +71,8 @@ class QrScanViewModel @Inject constructor(
     private fun stopScan() {
         _state.update {
             it.copy(
-                isScanning = false,
-                detectedBounds = null,
-                isCurrentlyDetected = false
+                isScanning = false
+                // detectedBounds는 유지 (스캔 중지해도 박스는 유지)
             )
         }
     }
@@ -84,10 +82,9 @@ class QrScanViewModel @Inject constructor(
             it.copy(
                 isScanning = true,
                 scannedResult = null,
-                detectedBounds = null,
-                isCurrentlyDetected = false,
                 isSuccess = false,
                 error = null
+                // detectedBounds는 유지 (성공 후에도 박스 위치 유지)
             )
         }
     }
@@ -100,11 +97,12 @@ class QrScanViewModel @Inject constructor(
 
     private fun updateDetectedBounds(bounds: QrCodeBounds?) {
         _state.update {
-            if (bounds == null) {
-                // 더 이상 인식되지 않더라도 마지막 박스 위치는 유지
-                it.copy(isCurrentlyDetected = false)
+            if (bounds != null) {
+                // QR이 감지되면 bounds 업데이트
+                it.copy(detectedBounds = bounds)
             } else {
-                it.copy(detectedBounds = bounds, isCurrentlyDetected = true)
+                // QR이 일시적으로 감지되지 않아도 기존 bounds 유지
+                it
             }
         }
     }
@@ -134,6 +132,7 @@ class QrScanViewModel @Inject constructor(
                         lastSavedTicket = null  // 이전 카드 제거
                     )
                 }
+                _effect.send(QrScanEffect.VibrateScan)
 
                 // 당첨 확인 (비동기로 수행하되, 실패해도 저장은 진행)
                 val winningDetail = checkWinning(ticketInfo)
@@ -143,6 +142,9 @@ class QrScanViewModel @Inject constructor(
                         isCheckingWinning = false,
                         currentWinningDetail = winningDetail
                     )
+                }
+                if (winningDetail?.gameResults?.any { it.rank in 1..5 } == true) {
+                    _effect.send(QrScanEffect.VibrateWinning)
                 }
 
                 // 즉시 저장 시도 (당첨 정보와 함께)
@@ -226,6 +228,14 @@ class QrScanViewModel @Inject constructor(
                 qrUrl = qrUrl
             )
 
+            val currentRound = _state.value.currentRound
+            val drawDate = winningDetail?.drawDate
+                ?: if (ticketInfo.round > currentRound) {
+                    LottoDate.getDrawDateTimeByNumber(ticketInfo.round).time
+                } else {
+                    null
+                }
+
             saveLottoTicketUseCase(ticket).fold(
                 onSuccess = {
                     val summary = SavedTicketSummary(
@@ -243,7 +253,7 @@ class QrScanViewModel @Inject constructor(
                         winningResults = winningDetail?.gameResults,
                         winningCheckFailed = winningDetail == null,
                         firstPrizeAmount = winningDetail?.firstPrizeAmount,
-                        drawDate = winningDetail?.drawDate
+                        drawDate = drawDate
                     )
                     _state.update {
                         it.copy(
@@ -251,7 +261,7 @@ class QrScanViewModel @Inject constructor(
                             savedTickets = listOf(summary) + it.savedTickets,
                             lastSavedTicket = summary,
                             scannedResult = null,
-                            detectedBounds = null,
+                            detectedBounds = null,  // 새 QR 스캔을 위해 박스 초기화
                             isSuccess = false,
                             isScanning = true,
                             currentWinningDetail = null,
@@ -301,7 +311,7 @@ class QrScanViewModel @Inject constructor(
         _state.update {
             it.copy(
                 scannedResult = null,
-                detectedBounds = null,
+                detectedBounds = null,  // 에러 후 재시작 시 박스 초기화
                 isSuccess = false,
                 isScanning = true,
                 currentWinningDetail = null
