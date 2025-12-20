@@ -10,6 +10,7 @@ import com.enso.domain.model.LottoGame
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.qrscan.parser.LottoQrParser
+import com.enso.util.lotto_date.LottoDate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -36,6 +37,10 @@ class QrScanViewModel @Inject constructor(
 
     // 마지막으로 처리한 QR URL (중복 방지용)
     private var lastProcessedQrUrl: String? = null
+
+    init {
+        _state.update { it.copy(currentRound = LottoDate.getCurrentDrawNumber()) }
+    }
 
     fun onEvent(event: QrScanEvent) {
         when (event) {
@@ -131,12 +136,12 @@ class QrScanViewModel @Inject constructor(
                 }
 
                 // 당첨 확인 (비동기로 수행하되, 실패해도 저장은 진행)
-                val winningResults = checkWinning(ticketInfo)
+                val winningDetail = checkWinning(ticketInfo)
 
                 _state.update {
                     it.copy(
                         isCheckingWinning = false,
-                        currentWinningResults = winningResults
+                        currentWinningDetail = winningDetail
                     )
                 }
 
@@ -156,11 +161,11 @@ class QrScanViewModel @Inject constructor(
         }
     }
 
-    private suspend fun checkWinning(ticketInfo: com.enso.qrscan.parser.LottoTicketInfo): List<GameWinningInfo>? {
+    private suspend fun checkWinning(ticketInfo: com.enso.qrscan.parser.LottoTicketInfo): TicketWinningDetail? {
         return try {
             val lottoResult = getLottoResultUseCase(ticketInfo.round).getOrNull() ?: return null
 
-            ticketInfo.games.mapIndexed { index, gameInfo ->
+            val gameResults = ticketInfo.games.mapIndexed { index, gameInfo ->
                 val matchedCount = gameInfo.numbers.count { it in lottoResult.numbers }
                 val bonusMatched = lottoResult.bonusNumber in gameInfo.numbers
 
@@ -180,6 +185,14 @@ class QrScanViewModel @Inject constructor(
                     bonusMatched = bonusMatched
                 )
             }
+
+            TicketWinningDetail(
+                winningNumbers = lottoResult.numbers,
+                bonusNumber = lottoResult.bonusNumber,
+                gameResults = gameResults,
+                firstPrizeAmount = lottoResult.firstPrize.winAmount,
+                drawDate = lottoResult.drawDate
+            )
         } catch (e: Exception) {
             Log.e("whk__", "당첨 확인 실패: ${e.message}")
             null
@@ -188,7 +201,7 @@ class QrScanViewModel @Inject constructor(
 
     private fun saveScannedTicket(qrUrl: String, forceOverwrite: Boolean = false) {
         val ticketInfo = _state.value.scannedResult ?: return
-        val winningResults = _state.value.currentWinningResults
+        val winningDetail = _state.value.currentWinningDetail
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
@@ -218,19 +231,30 @@ class QrScanViewModel @Inject constructor(
                     val summary = SavedTicketSummary(
                         round = ticketInfo.round,
                         gameCount = ticketInfo.games.size,
-                        winningResults = winningResults,
-                        winningCheckFailed = winningResults == null
+                        games = ticketInfo.games.mapIndexed { index, gameInfo ->
+                            ScannedGameSummary(
+                                gameLabel = ('A' + index).toString(),
+                                numbers = gameInfo.numbers,
+                                isAuto = gameInfo.isAuto
+                            )
+                        },
+                        winningNumbers = winningDetail?.winningNumbers,
+                        bonusNumber = winningDetail?.bonusNumber,
+                        winningResults = winningDetail?.gameResults,
+                        winningCheckFailed = winningDetail == null,
+                        firstPrizeAmount = winningDetail?.firstPrizeAmount,
+                        drawDate = winningDetail?.drawDate
                     )
                     _state.update {
                         it.copy(
                             isSaving = false,
-                            savedTickets = it.savedTickets + summary,
+                            savedTickets = listOf(summary) + it.savedTickets,
                             lastSavedTicket = summary,
                             scannedResult = null,
                             detectedBounds = null,
                             isSuccess = false,
                             isScanning = true,
-                            currentWinningResults = null,
+                            currentWinningDetail = null,
                             duplicateConfirmation = null
                         )
                     }
@@ -280,7 +304,7 @@ class QrScanViewModel @Inject constructor(
                 detectedBounds = null,
                 isSuccess = false,
                 isScanning = true,
-                currentWinningResults = null
+                currentWinningDetail = null
             )
         }
     }

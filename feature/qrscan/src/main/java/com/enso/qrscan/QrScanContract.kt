@@ -3,6 +3,7 @@ package com.enso.qrscan
 import android.graphics.PointF
 import androidx.compose.ui.geometry.Offset
 import com.enso.qrscan.parser.LottoTicketInfo
+import java.util.Date
 
 data class QrCodeBounds(
     val cornerPoints: List<PointF>,
@@ -18,12 +19,31 @@ data class GameWinningInfo(
     val bonusMatched: Boolean = false
 )
 
+data class ScannedGameSummary(
+    val gameLabel: String,
+    val numbers: List<Int>,
+    val isAuto: Boolean
+)
+
+data class TicketWinningDetail(
+    val winningNumbers: List<Int>,
+    val bonusNumber: Int,
+    val gameResults: List<GameWinningInfo>,
+    val firstPrizeAmount: Long,
+    val drawDate: Date
+)
+
 data class SavedTicketSummary(
     val round: Int,
     val gameCount: Int,
+    val games: List<ScannedGameSummary>,
     val timestamp: Long = System.currentTimeMillis(),
+    val winningNumbers: List<Int>? = null,
+    val bonusNumber: Int? = null,
     val winningResults: List<GameWinningInfo>? = null,  // null이면 당첨 확인 불가
-    val winningCheckFailed: Boolean = false  // 당첨 확인 실패 여부
+    val winningCheckFailed: Boolean = false,  // 당첨 확인 실패 여부
+    val firstPrizeAmount: Long? = null,
+    val drawDate: Date? = null
 )
 
 data class DuplicateConfirmation(
@@ -42,10 +62,11 @@ data class QrScanUiState(
     val focusPoint: Offset? = null,
     val isFocusing: Boolean = false,
     val savedTickets: List<SavedTicketSummary> = emptyList(),
+    val currentRound: Int = 0,
     val isListExpanded: Boolean = false,
     val isSaving: Boolean = false,
     val isCheckingWinning: Boolean = false,  // 당첨 확인 중
-    val currentWinningResults: List<GameWinningInfo>? = null,  // 현재 스캔된 티켓의 당첨 결과
+    val currentWinningDetail: TicketWinningDetail? = null,  // 현재 스캔된 티켓의 당첨 결과
     val lastSavedTicket: SavedTicketSummary? = null,
     val duplicateConfirmation: DuplicateConfirmation? = null  // 중복 확인 다이얼로그 상태
 )

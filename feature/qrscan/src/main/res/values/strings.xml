@@ -1,0 +1,10 @@
+<resources>
+    <string name="qr_saved_ticket_round">제 %d회</string>
+    <string name="qr_result_not_drawn">미추첨</string>
+    <string name="qr_result_unavailable">확인불가</string>
+    <string name="qr_result_expired">기한 지남</string>
+    <string name="qr_result_lose">낙첨</string>
+    <string name="qr_result_rank_format">%d등</string>
+    <string name="qr_result_prize_4th">50,000원</string>
+    <string name="qr_result_prize_5th">5,000원</string>
+</resources>

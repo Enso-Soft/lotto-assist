@@ -13,12 +13,21 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.snapFlingBehavior
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,9 +38,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.delay
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -56,9 +75,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -69,6 +91,10 @@ import com.enso.qrscan.parser.LottoTicketInfo
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import java.text.NumberFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.Executors
 
 private data class QrBoxMetrics(
@@ -117,10 +143,6 @@ private fun isSimilarBounds(
  * QR 스캐너 오버레이 스타일 상수
  */
 private object QrOverlayStyle {
-    // 색상
-    val defaultColor = Color(0xFFA78BFA)    // 퍼플
-    val successColor = Color(0xFF86EFAC)    // 민트 그린
-
     // 두께
     const val cornerStrokeWidth = 8f
     const val checkmarkStrokeWidth = 8f
@@ -244,11 +266,9 @@ fun QrScanScreen(
         ) {
             // 최소화된 목록 (저장된 QR이 있을 때만 표시)
             if (uiState.savedTickets.isNotEmpty()) {
-                MinimizedSavedList(
-                    count = uiState.savedTickets.size,
-                    isExpanded = uiState.isListExpanded,
-                    savedTickets = uiState.savedTickets,
-                    onToggle = { viewModel.onEvent(QrScanEvent.ToggleListExpansion) }
+                SavedTicketsPager(
+                    tickets = uiState.savedTickets,
+                    currentRound = uiState.currentRound
                 )
             }
 
@@ -266,33 +286,6 @@ fun QrScanScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-        }
-
-        // 요약 카드 (저장 직후 표시: 최소 5초 + QR이 사라질 때까지)
-        uiState.lastSavedTicket?.let { lastSaved ->
-            var shouldShow by remember(lastSaved) { mutableStateOf(true) }
-            val showStartTime = remember(lastSaved) { System.currentTimeMillis() }
-
-            LaunchedEffect(lastSaved) {
-                // 100ms마다 체크하면서 숨김 조건 확인
-                while (shouldShow) {
-                    delay(100)
-                    val elapsed = System.currentTimeMillis() - showStartTime
-                    // 5초 경과 AND QR이 사라지면 숨김
-                    if (elapsed >= 5000 && uiState.detectedBounds == null) {
-                        shouldShow = false
-                    }
-                }
-            }
-
-            if (shouldShow) {
-                SaveSuccessCard(
-                    ticket = lastSaved,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = if (uiState.savedTickets.isEmpty()) 160.dp else 240.dp)
-                )
-            }
         }
 
         // 스낵바 호스트
@@ -468,7 +461,9 @@ private fun QrOverlay(
         label = "qr_box_animation"
     )
 
-    val cornerColor = if (isSuccess) QrOverlayStyle.successColor else QrOverlayStyle.defaultColor
+    val qrPrimary = colorResource(R.color.qr_primary_blue)
+    val successColor = qrPrimary
+    val cornerColor = if (isSuccess) successColor else qrPrimary.copy(alpha = 0.8f)
     val overlayAlpha = if (shouldAnimateScale) animationProgress else 1f
 
     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -616,7 +611,7 @@ private fun QrOverlay(
                 // 체크마크
                 drawPath(
                     path = checkPath,
-                    color = QrOverlayStyle.successColor.copy(alpha = checkAlpha),
+                    color = successColor.copy(alpha = checkAlpha),
                     style = Stroke(
                         width = QrOverlayStyle.checkmarkStrokeWidth,
                         cap = androidx.compose.ui.graphics.StrokeCap.Round,
@@ -773,78 +768,287 @@ private fun processImageProxy(
 }
 
 @Composable
-private fun SaveSuccessCard(
-    ticket: SavedTicketSummary,
+@OptIn(ExperimentalFoundationApi::class)
+private fun SavedTicketsPager(
+    tickets: List<SavedTicketSummary>,
+    currentRound: Int,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.material3.Card(
-        modifier = modifier
-            .fillMaxWidth(0.8f),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = QrOverlayStyle.successColor.copy(alpha = 0.95f)
-        ),
-        shape = MaterialTheme.shapes.medium
+    val listState = rememberLazyListState()
+    val cardWidth = 300.dp
+
+    LaunchedEffect(tickets.size) {
+        if (tickets.isNotEmpty()) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "✓",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        val sidePadding = ((maxWidth - cardWidth) / 2).coerceAtLeast(0.dp)
+        val snapLayoutInfoProvider = remember(listState) {
+            object : SnapLayoutInfoProvider by SnapLayoutInfoProvider(
+                listState,
+                SnapPosition.Center
             ) {
-                Text(
-                    text = "${ticket.round}회 ${ticket.gameCount}게임 저장됨",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
+                override fun calculateApproachOffset(
+                    velocity: Float,
+                    decayOffset: Float
+                ): Float = 0f
+            }
+        }
+        val decayAnimationSpec = rememberSplineBasedDecay<Float>()
+        val snapFlingBehavior = remember(snapLayoutInfoProvider, decayAnimationSpec) {
+            snapFlingBehavior(
+                snapLayoutInfoProvider = snapLayoutInfoProvider,
+                decayAnimationSpec = decayAnimationSpec,
+                snapAnimationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
                 )
+            )
+        }
 
-                // 당첨 결과 표시
-                when {
-                    ticket.winningResults != null && ticket.winningResults.isNotEmpty() -> {
-                        val winningGames = ticket.winningResults.filter { it.rank in 1..5 }
-                        if (winningGames.isNotEmpty()) {
-                            val winningText = winningGames.joinToString(", ") { game ->
-                                "${game.gameLabel}: ${game.rank}등"
-                            }
-                            Text(
-                                text = "당첨: $winningText",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Yellow,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Text(
-                                text = "전체 낙첨",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                    ticket.winningCheckFailed -> {
-                        Text(
-                            text = "당첨 확인 불가 (추첨 전 또는 네트워크 오류)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                Text(
-                    text = "계속 스캔할 수 있습니다",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.9f)
+        LazyRow(
+            state = listState,
+            flingBehavior = snapFlingBehavior,
+            contentPadding = PaddingValues(horizontal = sidePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = tickets,
+                key = { it.timestamp }
+            ) { ticket ->
+                QrTicketCard(
+                    ticket = ticket,
+                    currentRound = currentRound,
+                    modifier = Modifier
+                        .animateItem()
+                        .width(cardWidth)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun QrTicketCard(
+    ticket: SavedTicketSummary,
+    currentRound: Int,
+    modifier: Modifier = Modifier
+) {
+    val winningNumbers = ticket.winningNumbers.orEmpty()
+    val isDrawComplete = currentRound >= ticket.round
+    val isPrizeExpired = ticket.drawDate?.let { isPrizeExpired(it) } ?: false
+    val highlightShape = MaterialTheme.shapes.small
+    val qrPrimary = colorResource(R.color.qr_primary_blue)
+    val qrPrimaryContainer = colorResource(R.color.qr_primary_container_blue)
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.qr_saved_ticket_round, ticket.round),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            ticket.games.forEach { game ->
+                val gameResult = ticket.winningResults?.firstOrNull {
+                    it.gameLabel == game.gameLabel
+                }
+                val resultText = gameResultText(
+                    isDrawComplete = isDrawComplete,
+                    isPrizeExpired = isPrizeExpired,
+                    winningCheckFailed = ticket.winningCheckFailed,
+                    gameResult = gameResult,
+                    firstPrizeAmount = ticket.firstPrizeAmount
+                )
+                val isWinning = gameResult?.rank in 1..5 && !isPrizeExpired
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .background(
+                            color = if (isWinning) {
+                                qrPrimaryContainer.copy(alpha = 0.4f)
+                            } else {
+                                Color.Transparent
+                            },
+                            shape = highlightShape
+                        )
+                        .border(
+                            width = if (isWinning) 1.dp else 0.dp,
+                            color = if (isWinning) {
+                                qrPrimary.copy(alpha = 0.6f)
+                            } else {
+                                Color.Transparent
+                            },
+                            shape = highlightShape
+                        )
+                        .padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = game.gameLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = qrPrimary,
+                        modifier = Modifier.width(16.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.wrapContentWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        game.numbers.forEach { number ->
+                            QrHighlightedSmallLottoBall(
+                                number = number,
+                                isMatched = winningNumbers.contains(number)
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = resultText,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isWinning) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = if (isWinning) {
+                                MaterialTheme.typography.labelMedium.fontSize * 1.1f
+                            } else {
+                                MaterialTheme.typography.labelMedium.fontSize
+                            },
+                            color = if (isWinning) {
+                                qrPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            modifier = Modifier.widthIn(min = 64.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun gameResultText(
+    isDrawComplete: Boolean,
+    isPrizeExpired: Boolean,
+    winningCheckFailed: Boolean,
+    gameResult: GameWinningInfo?,
+    firstPrizeAmount: Long?
+): String {
+    return when {
+        isPrizeExpired -> stringResource(R.string.qr_result_expired)
+        !isDrawComplete -> stringResource(R.string.qr_result_not_drawn)
+        winningCheckFailed || gameResult == null -> stringResource(R.string.qr_result_unavailable)
+        gameResult.rank == 1 -> firstPrizeAmount?.let { formatPrizeAmount(it) }
+            ?: stringResource(R.string.qr_result_rank_format, 1)
+        gameResult.rank == 2 || gameResult.rank == 3 -> {
+            stringResource(R.string.qr_result_rank_format, gameResult.rank)
+        }
+        gameResult.rank == 4 -> stringResource(R.string.qr_result_prize_4th)
+        gameResult.rank == 5 -> stringResource(R.string.qr_result_prize_5th)
+        else -> stringResource(R.string.qr_result_lose)
+    }
+}
+
+@Composable
+private fun QrHighlightedSmallLottoBall(
+    number: Int,
+    isMatched: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isMatched) {
+        qrLottoBallColor(number)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val contentColor = if (isMatched) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val borderColor = if (isMatched) {
+        MaterialTheme.colorScheme.outline
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Box(
+        modifier = modifier
+            .size(26.dp)
+            .background(backgroundColor, shape = CircleShape)
+            .border(width = 1.dp, color = borderColor, shape = CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = number.toString(),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isMatched) FontWeight.Bold else FontWeight.Normal,
+            color = contentColor
+        )
+    }
+}
+
+@Composable
+private fun qrLottoBallColor(number: Int): Color {
+    return when (number) {
+        in 1..10 -> colorResource(R.color.qr_ball_yellow)
+        in 11..20 -> colorResource(R.color.qr_ball_blue)
+        in 21..30 -> colorResource(R.color.qr_ball_red)
+        in 31..40 -> colorResource(R.color.qr_ball_grey)
+        else -> colorResource(R.color.qr_ball_green)
+    }
+}
+
+private fun isPrizeExpired(drawDate: Date): Boolean {
+    val calendar = Calendar.getInstance().apply { time = drawDate }
+    calendar.add(Calendar.YEAR, 1)
+    return Date().after(calendar.time)
+}
+
+private fun formatPrizeAmount(amount: Long): String {
+    val billions = amount / 100_000_000
+    val remainder = amount % 100_000_000
+    val tenThousands = remainder / 10_000
+
+    return if (billions > 0) {
+        if (tenThousands > 0) {
+            val formatter = NumberFormat.getInstance(Locale.KOREA)
+            "${billions}억 ${formatter.format(tenThousands)}만원"
+        } else {
+            "${billions}억원"
+        }
+    } else if (tenThousands > 0) {
+        val formatter = NumberFormat.getInstance(Locale.KOREA)
+        "${formatter.format(tenThousands)}만원"
+    } else {
+        "${amount}원"
     }
 }
 
