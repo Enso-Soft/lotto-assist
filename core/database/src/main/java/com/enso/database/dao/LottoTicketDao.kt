@@ -2,6 +2,7 @@ package com.enso.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.enso.database.entity.LottoTicketEntity
@@ -9,11 +10,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LottoTicketDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(ticket: LottoTicketEntity): Long
 
     @Query("DELETE FROM lotto_tickets WHERE ticketId = :ticketId")
     suspend fun delete(ticketId: Long)
+
+    @Query("DELETE FROM lotto_tickets WHERE qrUrl = :qrUrl")
+    suspend fun deleteByQrUrl(qrUrl: String)
+
+    @Query("SELECT * FROM lotto_tickets WHERE qrUrl = :qrUrl LIMIT 1")
+    suspend fun getTicketByQrUrl(qrUrl: String): LottoTicketEntity?
 
     @Query("SELECT * FROM lotto_tickets ORDER BY registeredDate DESC")
     fun getAllTicketsByRegisteredDateDesc(): Flow<List<LottoTicketEntity>>

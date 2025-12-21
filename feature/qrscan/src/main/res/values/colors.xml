@@ -1,0 +1,10 @@
+<resources>
+    <color name="qr_primary_blue">#137FEC</color>
+    <color name="qr_primary_container_blue">#D6E9FF</color>
+    <color name="qr_ball_yellow">#FBC400</color>
+    <color name="qr_ball_blue">#69C8F2</color>
+    <color name="qr_ball_red">#FF7272</color>
+    <color name="qr_ball_grey">#B0B0B0</color>
+    <color name="qr_ball_green">#B0D840</color>
+    <color name="qr_result_card_background">#FFFFFF</color>
+</resources>

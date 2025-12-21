@@ -1,6 +1,7 @@
 package com.enso.network.di
 
 import android.content.Context
+import com.enso.network.BuildConfig
 import com.enso.network.api.LottoApi
 import dagger.Module
 import dagger.Provides
@@ -34,11 +35,15 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .readTimeout(connectTimeOutSec, TimeUnit.SECONDS)
             .connectTimeout(readTimeOutSec, TimeUnit.SECONDS)
-            .addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BODY
+                        }
+                    )
                 }
-            )
+            }
             .addInterceptor(
                 Interceptor { chain ->
                     with(chain) {

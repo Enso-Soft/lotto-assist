@@ -14,7 +14,8 @@ fun LottoTicketEntity.toDomain(games: List<LottoGameEntity>): LottoTicket {
         round = this.round,
         registeredDate = Date(this.registeredDate),
         isChecked = this.isChecked,
-        games = games.map { it.toDomain() }
+        games = games.map { it.toDomain() },
+        qrUrl = this.qrUrl
     )
 }
 
@@ -34,7 +35,8 @@ fun LottoTicket.toTicketEntity(): LottoTicketEntity {
         ticketId = this.ticketId,
         round = this.round,
         registeredDate = this.registeredDate.time,
-        isChecked = this.isChecked
+        isChecked = this.isChecked,
+        qrUrl = this.qrUrl
     )
 }
 

@@ -10,6 +10,7 @@ import com.enso.domain.model.TicketSortType
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
+import com.enso.domain.usecase.GetLocalLottoResultCountUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
 import com.enso.domain.usecase.GetLottoTicketsUseCase
 import com.enso.domain.usecase.SaveLottoTicketUseCase
@@ -36,7 +37,7 @@ class LottoResultViewModel @Inject constructor(
     private val saveLottoTicketUseCase: SaveLottoTicketUseCase,
     private val deleteLottoTicketUseCase: DeleteLottoTicketUseCase,
     private val checkTicketWinningUseCase: CheckTicketWinningUseCase,
-    private val lottoRepository: com.enso.domain.repository.LottoRepository
+    private val getLocalLottoResultCountUseCase: GetLocalLottoResultCountUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LottoResultUiState())
@@ -56,9 +57,13 @@ class LottoResultViewModel @Inject constructor(
         _state.update { it.copy(currentRound = currentRound) }
 
         viewModelScope.launch {
-            val localCount = lottoRepository.getLocalCount()
-            if (localCount == 0) {
-                startInitialSync()
+            try {
+                val localCount = getLocalLottoResultCountUseCase()
+                if (localCount == 0) {
+                    startInitialSync()
+                }
+            } catch (e: Exception) {
+                _effect.send(LottoResultEffect.ShowError("데이터 확인 실패: ${e.message}"))
             }
         }
     }
@@ -95,9 +100,22 @@ class LottoResultViewModel @Inject constructor(
 
         viewModelScope.launch {
             syncLottoResultsUseCase(currentRound)
-                .onSuccess {
+                .onSuccess { syncResult ->
                     _state.update { it.copy(isSyncing = false) }
-                    _effect.send(LottoResultEffect.SyncCompleted)
+                    when {
+                        syncResult.isFullSuccess || syncResult.totalCount == 0 -> {
+                            _effect.send(LottoResultEffect.SyncCompleted)
+                        }
+                        syncResult.isPartialSuccess -> {
+                            _effect.send(LottoResultEffect.PartialSyncCompleted(
+                                successCount = syncResult.successCount,
+                                failedCount = syncResult.failedCount
+                            ))
+                        }
+                        syncResult.isFullFailure -> {
+                            _effect.send(LottoResultEffect.ShowError("동기화 실패: 모든 회차를 가져오지 못했습니다"))
+                        }
+                    }
                 }
                 .onFailure { e ->
                     val errorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
@@ -172,9 +190,22 @@ class LottoResultViewModel @Inject constructor(
 
         viewModelScope.launch {
             syncLottoResultsUseCase(currentRound)
-                .onSuccess {
+                .onSuccess { syncResult ->
                     _state.update { it.copy(isSyncing = false) }
-                    _effect.send(LottoResultEffect.SyncCompleted)
+                    when {
+                        syncResult.isFullSuccess || syncResult.totalCount == 0 -> {
+                            _effect.send(LottoResultEffect.SyncCompleted)
+                        }
+                        syncResult.isPartialSuccess -> {
+                            _effect.send(LottoResultEffect.PartialSyncCompleted(
+                                successCount = syncResult.successCount,
+                                failedCount = syncResult.failedCount
+                            ))
+                        }
+                        syncResult.isFullFailure -> {
+                            _effect.send(LottoResultEffect.ShowError("동기화 실패: 모든 회차를 가져오지 못했습니다"))
+                        }
+                    }
                 }
                 .onFailure { e ->
                     val errorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."

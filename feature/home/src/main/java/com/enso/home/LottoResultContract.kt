@@ -35,6 +35,7 @@ sealed class LottoResultEvent {
 sealed class LottoResultEffect {
     data class ShowError(val message: String) : LottoResultEffect()
     data object SyncCompleted : LottoResultEffect()
+    data class PartialSyncCompleted(val successCount: Int, val failedCount: Int) : LottoResultEffect()
     data object NavigateToQrScan : LottoResultEffect()
     data object NavigateToManualInput : LottoResultEffect()
     data class ShowTicketSaved(val count: Int) : LottoResultEffect()

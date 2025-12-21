@@ -5,6 +5,7 @@ import com.enso.data.mapper.toGameEntity
 import com.enso.data.mapper.toDomain
 import com.enso.data.mapper.toTicketEntity
 import com.enso.di.IoDispatcher
+import com.enso.domain.exception.DuplicateQrException
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
 import com.enso.domain.repository.LottoTicketRepository
@@ -23,6 +24,9 @@ class LottoTicketRepositoryImpl @Inject constructor(
         runCatching {
             // 1. 티켓 먼저 저장 -> ticketId 획득
             val ticketId = localDataSource.insertTicket(ticket.toTicketEntity())
+            if (ticketId == -1L) {
+                throw DuplicateQrException()
+            }
 
             // 2. 게임들 저장 (ticketId 사용)
             val gameEntities = ticket.games.map { it.toGameEntity(ticketId) }
@@ -35,6 +39,17 @@ class LottoTicketRepositoryImpl @Inject constructor(
     override suspend fun deleteTicket(ticketId: Long): Result<Unit> = withContext(ioDispatcher) {
         runCatching {
             localDataSource.deleteTicket(ticketId)
+        }
+    }
+
+    override suspend fun deleteTicketByQrUrl(qrUrl: String): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            // 먼저 해당 티켓을 조회하여 존재하는지 확인
+            val existingTicket = localDataSource.getTicketByQrUrl(qrUrl)
+            if (existingTicket != null) {
+                // 티켓 삭제 (CASCADE로 연결된 게임들도 자동 삭제됨)
+                localDataSource.deleteTicketByQrUrl(qrUrl)
+            }
         }
     }
 

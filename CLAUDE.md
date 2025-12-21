@@ -1,175 +1,198 @@
 # CLAUDE.md
-Guidance for Claude Code (claude.ai/code) in this repository.
 
-**Language**: Always respond in Korean (한국어) unless explicitly asked otherwise.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Non-negotiable rules (CRITICAL)
+## Core AI Instructions
 
-### 0) If unsure, ask first (NO GUESSING)
-- Do **not** invent APIs/classes/files. If something is unclear or missing, **ask questions** before coding.
-- If a requirement can be interpreted multiple ways, propose options and ask which one to implement.
+- **Memory Efficiency**: Use specialized sub-agents for complex tasks
+- **Tool Optimization**: Evaluate results before proceeding to next steps
+- **Parallel Processing**: Run independent tasks concurrently
+- **Verification**: Always verify critical operations
 
-### 1) Read & Search before editing
-- Before changing a file: **open/read it first**. Never modify unseen code.
-- Before creating new code: **grep/search** for similar implementations and reuse patterns.
+## Sub-Agent System
 
-### 2) Minimal change
-- Touch only what’s required for the request.
-- No drive-by refactors, renames, formatting-only changes, or unrelated cleanup.
+This project uses specialized sub-agents defined in `.claude/agents/`. Use the Task tool to invoke them.
 
-### 3) Clean Architecture boundaries (strict)
-- **Domain**: pure Kotlin, **no Android/framework deps**.
-- **Data**: implements Domain repositories, depends on Domain only.
-- **Presentation**: Compose UI + ViewModel only. No business logic beyond UI orchestration.
+### Available Agents
 
-### 4) Compose + Material 3 (strict)
-- Use `MaterialTheme.colorScheme`, `typography`, `shapes`.
-- No hardcoded colors. Avoid hardcoded sizes; prefer theme/dimens when repeated.
-- UI text: resources (`strings.xml`). (Exception: internal debug-only strings.)
+| Agent | Description | When to Use |
+|-------|-------------|-------------|
+| `planner` | Requirements analysis, task decomposition, priority decisions | New feature development, refactoring start |
+| `ux-engineer` | Screen design, component structure definition | UI design work |
+| `ui-component-builder` | Reusable Compose component implementation | UI component creation |
+| `code-writer` | Feature implementation (Domain, Data, Presentation) | Business logic and feature code |
+| `test-engineer` | Unit/UI/Integration test writing | Test code creation and execution |
+| `code-critic` | Code review, improvement proposals, debates | Code quality review |
+| `performance-optimizer` | Recomposition optimization, memory leak detection | Performance optimization |
 
-### 5) MVI contract (strict)
-- `UiState`: immutable `data class`
-- `UiEvent`: `sealed class/interface`
-- `UiEffect`: one-shot via `Channel` + `receiveAsFlow()`
-- State: private mutable, public read-only `StateFlow`.
+### Mandatory Workflow (Agent-driven)
 
----
-
-## Project summary
-**Lotto Assist**: Lotto number management/analysis Android app.
-Stack: Kotlin, Jetpack Compose, Hilt, Coroutines/Flow, Room, Retrofit.
-Architecture: Clean Architecture + MVI. Features are micro-modules.
-
-## Module layout (high level)
-- `app/`: application + navigation host
-- `core/`
-    - `domain/`: models, repository interfaces, usecases
-    - `data/`: repository implementations, mappers
-    - `network/`: Retrofit APIs + DTOs
-    - `database/`: Room entities/DAOs
-    - `di/`: Hilt modules, dispatchers
-    - `util/`: shared utilities
-- `feature/`
-    - `home/`
-    - `qrscan/`
-
----
-
-## Required workflow for any task
-
-### Step A) Clarify
-Ask questions when needed. Especially:
-- Sorting rules (tie-breakers), default ordering, paging behavior
-- UX details (BottomSheet contents, copy, empty/error states)
-- Data source truth (DB vs network vs cached)
-
-### Step B) Explore
-- Locate existing patterns (MVI, repository, bottom sheets, list rendering).
-- Identify exact files/modules to change.
-
-### Step C) Plan (must show a short plan)
-- Outline changes by layer/module.
-- Mention new/changed types (State/Event/Effect, UseCase, Repo methods).
-- List risks/assumptions.
-
-### Step D) Implement incrementally
-- Implement smallest vertical slice first (domain → data → presentation only if needed).
-- Keep changes localized.
-
-### Step E) Verify (mandatory)
-Run commands and fix until green:
-- `./gradlew test`
-- `./gradlew lint` (if configured) or `./gradlew check`
-- `./gradlew assembleDebug`
-  If instrumentation is relevant:
-- `./gradlew connectedAndroidTest` (only when device/emulator is available)
-
-**If you cannot run commands** (CI/tooling limits): say so explicitly and provide exact commands + expected outcomes.
-
----
-
-## Build / Test commands (canonical)
-
-```bash
-# Build
-./gradlew clean build
-./gradlew assembleDebug
-
-# Unit tests
-./gradlew test
-./gradlew :core:domain:test
-
-# Quality gate
-./gradlew check
-
-# Instrumentation (only if device/emulator available)
-./gradlew connectedAndroidTest
+```mermaid
+flowchart TD
+    Start([Task Start]) --> P[Step 0: planner]
+    P --> UI{UI involved?}
+    UI -->|Yes| UX[Step 1: ux-engineer]
+    UI -->|No| CW
+    UX --> NewComp{New components?}
+    NewComp -->|Yes| UCB[Step 2: ui-component-builder]
+    NewComp -->|No| CW
+    UCB --> CW[Step 3: code-writer]
+    CW --> TE[Step 4: test-engineer]
+    TE --> CC[Step 5: code-critic]
+    CC --> Issues{Issues found?}
+    Issues -->|Yes| CW
+    Issues -->|No| Perf{Performance critical?}
+    Perf -->|Yes| PO[Step 6: performance-optimizer]
+    Perf -->|No| Done([Complete])
+    PO --> Done
 ```
 
-## Implementation conventions
+#### Step 0) Planning (ALWAYS)
+- **Invoke**: `planner`
+- **Gate**:
+  - Requirements clarified (ask questions if ambiguous)
+  - Task breakdown by layer (Domain/Data/Presentation)
+  - Acceptance criteria defined
+- **Next**: `ux-engineer` (if UI involved) else `code-writer`
 
-### Domain
-- UseCases: VerbNounUseCase, operator fun invoke(...).
-- Keep logic single-responsibility.
-- Return Result<T> for failure propagation (preferred), or Flow<Result<T>> when streaming.
+#### Step 1) UX Spec (CONDITIONAL)
+- **Skip if**: No UI changes (backend-only, refactoring, bug fix without UI)
+- **Invoke**: `ux-engineer`
+- **Gate**:
+  - Screen spec + interaction table
+  - Composable hierarchy
+  - MVI contract draft (UiState/Event/Effect)
+- **Next**: `ui-component-builder` (if new components) else `code-writer`
 
-### Data
-- Map DTO/Entity → Domain inside Data.
-- Main-safe: switch dispatcher inside repository (inject dispatcher via Hilt).
-- No Android framework types in Data unless isolated to database/network modules.
+#### Step 2) UI Components (CONDITIONAL)
+- **Skip if**: No new reusable components needed (using existing components only)
+- **Invoke**: `ui-component-builder`
+- **Gate**:
+  - Reusable components implemented
+  - Previews for light/dark + multiple sizes + fontScale
+  - State hoisting + modifier exposed
+- **Next**: `code-writer`
 
-### Presentation (Compose)
-- Screens should be stateless; state lives in ViewModel.
-- Use collectAsStateWithLifecycle().
-- Effects collected in LaunchedEffect(Unit).
+#### Step 3) Implementation (ALWAYS)
+- **Invoke**: `code-writer`
+- **Gate**:
+  - Clean Architecture boundaries respected
+  - MVI ViewModel/Contract wired
+  - Required MCP/codex-cli rounds completed
+- **Next**: `test-engineer`
 
-### Resources
-- User-facing strings -> strings.xml
-- Repeated sizes -> dimens.xml (optional)
-- Custom colors -> colors.xml (but prefer Material 3 theme first)
+#### Step 4) Tests (ALWAYS)
+- **Invoke**: `test-engineer`
+- **Gate**:
+  - Unit tests for business logic
+  - ViewModel state/effect tests
+  - UI tests where interaction exists
+- **Next**: `code-critic`
 
---- 
+#### Step 5) Review (ALWAYS)
+- **Invoke**: `code-critic`
+- **Gate**:
+  - No 🔴/🟠 issues remain
+  - If issues found → return to `code-writer`
 
-## Lotto-specific rules
+#### Step 6) Performance (CONDITIONAL but recommended)
+- **Invoke**: `performance-optimizer` when:
+  - Lazy lists, heavy recomposition risk, animations, big data, or release checklist
+- **Gate**:
+  - Stable params, keys, remember/derivedStateOf verified
+  - Optimization validated via codex-cli rounds
 
-### Official API (dhlottery)
-- Base: https://www.dhlottery.co.kr/
-- Draw result: /common.do?method=getLottoNumber&drwNo={drawNo}
+## MCP Servers
 
-### Ball color ranges
-- 1–10 Yellow
-- 11–20 Blue
-- 21–30 Red
-- 31–40 Gray
-- 41–45 Green
-- Use theme-friendly colors (consider dark mode contrast).
+Available MCP servers for enhanced capabilities:
 
-### QR parsing
-- Implemented under feature/qrscan.
-- Validate: 1–45 range + no duplicates.
+| Server | Purpose | Usage |
+|--------|---------|-------|
+| `context7` | Latest library documentation lookup | `resolve-library-id` → `get-library-docs` |
+| `sequential-thinking` | Step-by-step analysis for complex problems | Design, debugging, architecture decisions |
+| `exa` | Web search, code context search | When external information needed |
+| `github` | GitHub issues, PR management | Collaboration tasks |
+| `codex-cli` | Code analysis, review support | Code quality review |
 
----
+## Common Rules
 
-## Forbidden patterns
+- **Language**: Kotlin
+- **UI**: Jetpack Compose with Material3
+- **Architecture**: Clean Architecture + MVI
+- **DI**: Hilt
+- **Async**: Coroutines + Flow
 
-**Never**
-- God objects
-- Storing Activity/Context long-term
-- Blocking main thread with IO/DB/network
-- GlobalScope
-- Manual singletons (use Hilt)
+## Build Commands
 
-**Avoid**
-- Deprecated APIs
-- Hardcoded strings/colors
-- Duplicate code, unnecessary abstraction
+```bash
+# Build the project
+./gradlew build
 
----
+# Build specific module
+./gradlew :feature:home:build
 
-## Definition of Done (must satisfy)
-- No architecture boundary violations.
-- No invented APIs/classes; everything compiles.
-- Build + unit tests green (or explicit note why cannot run locally).
-- UI follows Material 3 + resources.
-- Sorting/filtering logic has deterministic tie-breakers.
-- Edge cases handled: loading/empty/error states.
+# Run all tests
+./gradlew test
+
+# Run tests for a specific module
+./gradlew :feature:home:testDebugUnitTest
+
+# Clean build
+./gradlew clean build
+```
+
+## Architecture
+
+This is an Android Kotlin project for a Korean Lotto (로또) assistance app. It follows Clean Architecture with multi-module structure.
+
+### Module Structure
+
+```
+app/                    # Application entry point, depends on all feature/core modules
+build-logic/            # Convention plugins for consistent build configuration
+├── convention/         # Custom Gradle plugins: lotto.android.application, lotto.android.library,
+│                       # lotto.android.hilt, lotto.jvm.library
+core/
+├── domain/            # Pure Kotlin module (no Android deps) - business logic, models, use cases, repository interfaces
+├── data/              # Repository implementations, data sources, mappers
+├── network/           # Retrofit API, network models
+├── database/          # Room database, DAOs, entities, migrations
+├── di/                # Hilt DI modules
+├── util/              # Utilities (e.g., LottoDate for draw number calculations)
+feature/
+├── home/              # Main screen with Compose UI, MVI pattern (UiState/Event/Effect)
+├── qrscan/            # QR code scanning with CameraX + ML Kit
+```
+
+### Key Patterns
+
+**MVI Architecture (feature modules):**
+- `*Contract.kt` defines `UiState`, `Event`, and `Effect` sealed classes
+- `*ViewModel.kt` uses `StateFlow` for state, `Channel` for one-time effects
+- Example: `LottoResultViewModel` handles events via `onEvent()` function
+
+**Repository Pattern:**
+- Interfaces in `core/domain/repository/`
+- Implementations in `core/data/repository/`
+- Data sources abstract local (Room) vs remote (Retrofit) access
+
+**Dependency Injection:**
+- Hilt throughout, using `@HiltViewModel` for ViewModels
+- DI modules in `core/di/`, `core/network/di/`, `core/database/di/`, `core/data/di/`
+
+### Domain Models
+
+- `LottoResult`: Draw result with numbers, bonus, prize info
+- `LottoTicket`: User's ticket with multiple games, QR URL, check status
+- `LottoGame`: Single game with 6 numbers, type (AUTO/MANUAL), winning rank
+
+### Tech Stack
+
+- Kotlin 2.0, Compose with Material3
+- Hilt for DI, Room for local DB, Retrofit/OkHttp for network
+- CameraX + ML Kit for QR scanning
+- Testing: JUnit, MockK, Turbine for Flow testing, Coroutines Test
+
+### QR Code Format
+
+Lotto QR codes use format: `?v=<4-digit-round><games>` where each game is `[m|q]<12-digit-numbers>` (m=manual, q=auto). Parser: `LottoQrParser.kt`

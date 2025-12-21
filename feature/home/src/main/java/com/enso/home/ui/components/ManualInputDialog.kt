@@ -34,8 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.enso.home.R
 import androidx.compose.ui.unit.sp
 import com.enso.home.ui.theme.Primary
 import com.enso.home.ui.theme.getLottoBallColor
@@ -55,7 +57,7 @@ fun ManualInputDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "번호 직접 입력",
+                stringResource(R.string.dialog_manual_input_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -70,7 +72,7 @@ fun ManualInputDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("자동 선택")
+                    Text(stringResource(R.string.dialog_auto_select))
                     Switch(
                         checked = isAuto,
                         onCheckedChange = { isAuto = it }
@@ -81,7 +83,7 @@ fun ManualInputDialog(
 
                 // 선택된 번호 표시
                 Text(
-                    "선택된 번호 (${selectedNumbers.size}/6)",
+                    stringResource(R.string.dialog_selected_numbers_format, selectedNumbers.size),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -90,7 +92,7 @@ fun ManualInputDialog(
 
                 if (selectedNumbers.isEmpty()) {
                     Text(
-                        "1~45 사이의 번호를 6개 선택하세요",
+                        stringResource(R.string.dialog_select_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -138,7 +140,7 @@ fun ManualInputDialog(
                     onClick = { selectedNumbers.clear() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("초기화")
+                    Text(stringResource(R.string.dialog_reset))
                 }
             }
         },
@@ -155,12 +157,12 @@ fun ManualInputDialog(
                     containerColor = Primary
                 )
             ) {
-                Text("저장")
+                Text(stringResource(R.string.dialog_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(stringResource(R.string.dialog_cancel))
             }
         }
     )
