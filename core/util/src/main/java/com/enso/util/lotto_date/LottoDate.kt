@@ -83,6 +83,20 @@ object LottoDate {
     }
 
     /**
+     * 특정 회차의 추첨일시를 계산 (20:45 포함)
+     * @param drawNumber 조회할 로또 회차
+     * @return Calendar 해당 회차의 추첨일시 Calendar 객체
+     */
+    fun getDrawDateTimeByNumber(drawNumber: Int): Calendar {
+        return getDrawDateByNumber(drawNumber).apply {
+            set(HOUR_OF_DAY, DRAW_HOUR)
+            set(MINUTE, DRAW_MINUTE)
+            set(SECOND, 0)
+            set(MILLISECOND, 0)
+        }
+    }
+
+    /**
      * 주어진 날짜가 추첨일(토요일)인지 확인
      * @param date 확인할 날짜의 Calendar 객체 (기본값: 현재 날짜)
      * @return Boolean 토요일이면 true, 아니면 false

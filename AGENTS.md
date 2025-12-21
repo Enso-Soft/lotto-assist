@@ -89,6 +89,15 @@ This project leverages the following MCP servers to support efficient developmen
 - You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
 - If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
 
+### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
+- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
+- If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
+- If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
+
+### 0-3) Context7 required for API usage changes
+- When introducing or changing framework/library APIs (e.g., Compose modifiers, animations, paging/snap), **run Context7 first** to confirm the latest recommended APIs and deprecations.
+- If Context7 is not used, **stop and ask for explicit approval** to proceed without it.
+
 ### 1) Read & Search before editing
 - Before changing a file: **open/read it first**. Never modify unseen code.
 - Before creating new code: **grep/search** for similar implementations and reuse patterns.

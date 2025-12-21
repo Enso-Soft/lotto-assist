@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.enso.lotto_assist.R
 import com.enso.home.HomeActivity
 import dagger.hilt.android.AndroidEntryPoint
 

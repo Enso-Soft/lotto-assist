@@ -1,0 +1,33 @@
+<resources>
+    <!-- 티켓 카드 -->
+    <string name="qr_saved_ticket_round">제 %d회</string>
+    <string name="qr_result_not_drawn">미추첨</string>
+    <string name="qr_result_unavailable">확인불가</string>
+    <string name="qr_result_expired">기한 지남</string>
+    <string name="qr_result_lose">낙첨</string>
+    <string name="qr_result_rank_format">%d등</string>
+    <string name="qr_result_prize_4th">50,000원</string>
+    <string name="qr_result_prize_5th">5,000원</string>
+
+    <!-- 추첨 일정 -->
+    <string name="qr_draw_schedule_format">%1$s 추첨 예정 %2$d일 %3$d시간 남음</string>
+    <string name="qr_draw_schedule_hours_only_format">%1$d시간 남음</string>
+    <string name="qr_draw_schedule_date_format">%1$s 추첨 예정</string>
+    <string name="qr_draw_schedule_remaining_format">%1$d일 %2$d시간 남음</string>
+
+    <!-- 중복 확인 -->
+    <string name="qr_duplicate_prompt_title">제 %d회 로또가 이미 저장되어 있습니다</string>
+    <string name="qr_duplicate_prompt_message">저장하면 기존 데이터를 덮어씁니다. 내 로또에 저장하시겠습니까?</string>
+    <string name="qr_duplicate_action_skip">스킵</string>
+    <string name="qr_duplicate_action_save">저장</string>
+
+    <!-- 스캔 안내 -->
+    <string name="qr_scan_guide">로또 용지의 QR 코드를 비춰주세요</string>
+    <string name="qr_scan_next_guide">다음 QR 코드를 비춰주세요</string>
+    <string name="qr_saving">저장 중…</string>
+    <string name="qr_already_added">이미 추가된 QR입니다</string>
+
+    <!-- 저장된 티켓 목록 -->
+    <string name="qr_tickets_saved_count">%d장 저장됨</string>
+    <string name="qr_ticket_summary_format">%1$d회 %2$d게임</string>
+</resources>
