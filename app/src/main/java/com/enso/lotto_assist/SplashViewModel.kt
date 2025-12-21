@@ -1,6 +1,5 @@
 package com.enso.lotto_assist
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enso.network.api.LottoApi
@@ -15,15 +14,9 @@ class SplashViewModel @Inject constructor(
 ) : ViewModel() {
     fun getLotto() {
         viewModelScope.launch {
-            Log.d("whk__", "최신 추첨 회자 : ${LottoDate.getCurrentDrawNumber()}")
-            Log.d("whk__", "추첨 날짜 : ${LottoDate.getNextDrawDateTime().time}")
-
-
-            val result = api.getLottoNumber(
+            api.getLottoNumber(
                 drwNo = LottoDate.getCurrentDrawNumber()
             )
-
-            Log.d("whk__", "result : ${result}")
         }
     }
 }

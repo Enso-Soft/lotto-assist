@@ -6,6 +6,10 @@ plugins {
 
 android {
     namespace = "com.enso.network"
+
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

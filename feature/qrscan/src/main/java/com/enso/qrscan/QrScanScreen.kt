@@ -153,6 +153,9 @@ fun QrScanScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+    // 리컴포지션 최적화: detectedBounds를 별도 StateFlow로 수집
+    // 이렇게 하면 bounds 변경 시 전체 화면이 아닌 QrOverlay만 재컴포즈됨
+    val detectedBounds by viewModel.detectedBounds.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -163,7 +166,7 @@ fun QrScanScreen(
                     snackbarHostState.showSnackbar(effect.message)
                 }
                 is QrScanEffect.ShowDuplicateMessage -> {
-                    snackbarHostState.showSnackbar("이미 추가된 QR입니다")
+                    snackbarHostState.showSnackbar(context.getString(R.string.qr_already_added))
                 }
                 is QrScanEffect.VibrateScan -> {
                     performVibration(context, SCAN_VIBRATION_MS)
@@ -244,7 +247,8 @@ fun QrScanScreen(
             )
 
             // QR 코드 감지 오버레이 (bounds가 있으면 항상 표시)
-            uiState.detectedBounds?.let { bounds ->
+            // 리컴포지션 최적화: 별도 StateFlow에서 수집한 bounds 사용
+            detectedBounds?.let { bounds ->
                 QrOverlay(
                     bounds = bounds,
                     isSuccess = uiState.isSuccess
@@ -284,11 +288,11 @@ fun QrScanScreen(
                     // 중앙 안내 문구
                     Text(
                         text = if (uiState.isSaving) {
-                            "저장 중..."
+                            stringResource(R.string.qr_saving)
                         } else if (uiState.savedTickets.isNotEmpty()) {
-                            "다음 QR 코드를 비춰주세요"
+                            stringResource(R.string.qr_scan_next_guide)
                         } else {
-                            "로또 용지의 QR 코드를 비춰주세요"
+                            stringResource(R.string.qr_scan_guide)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White,
@@ -1425,7 +1429,7 @@ private fun MinimizedSavedList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${count}장 저장됨",
+                    text = stringResource(R.string.qr_tickets_saved_count, count),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
@@ -1446,7 +1450,7 @@ private fun MinimizedSavedList(
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                     Text(
-                        text = "${ticket.round}회 ${ticket.gameCount}게임",
+                        text = stringResource(R.string.qr_ticket_summary_format, ticket.round, ticket.gameCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.9f)
                     )

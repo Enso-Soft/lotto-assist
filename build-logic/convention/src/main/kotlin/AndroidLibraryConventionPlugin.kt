@@ -29,7 +29,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                         isMinifyEnabled = false
                         proguardFiles(
                             getDefaultProguardFile("proguard-android-optimize.txt"),
-                            "proguard-rules.proㅎ"
+                            "proguard-rules.pro"
                         )
                     }
                 }

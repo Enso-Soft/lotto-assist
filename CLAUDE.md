@@ -6,6 +6,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Non-negotiable rules (CRITICAL)
+
+> ⚠️ **These rules must be followed strictly. No exceptions.**
+
+### 0) If unsure, ask first (NO GUESSING)
+- Do **not** invent APIs/classes/files. If something is unclear or missing, **ask questions** before coding.
+- If a requirement can be interpreted multiple ways, propose options and ask which one to implement.
+
+### 0-1) MCP usage declaration (REQUIRED)
+- You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
+- If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
+
+### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
+- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
+- If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
+- If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
+
+### 0-3) Context7 required for API usage changes
+- When introducing or changing framework/library APIs (e.g., Compose modifiers, animations, paging/snap), **run Context7 first** to confirm the latest recommended APIs and deprecations.
+- If Context7 is not used, **stop and ask for explicit approval** to proceed without it.
+
+### 0-4) Sub Agent auto-trigger (MANDATORY)
+When trigger conditions are met, the corresponding Agent **must** be used:
+- 20+ lines modified → `spot-check` required
+- Error/build failure → `bug-hunter` required
+- Before PR/commit → `cleanup-checker` required
+- UI code changed → `resource-checker` required
+- UseCase/Parser/VM changed → `test-checker` recommended
+
+**Exception**: May skip for trivial 1-2 line fixes (must state reason)
+
+**IMPORTANT**: Always verify Sub Agent execution even after build succeeds.
+
+### 1) Read & Search before editing
+- Before changing a file: **open/read it first**. Never modify unseen code.
+- Before creating new code: **grep/search** for similar implementations and reuse patterns.
+
+### 2) Minimal change
+- Touch only what's required for the request.
+- No drive-by refactors, renames, formatting-only changes, or unrelated cleanup.
+
+### 3) Clean Architecture boundaries (strict)
+- **Domain**: pure Kotlin, **no Android/framework deps**.
+- **Data**: implements Domain repositories, depends on Domain only.
+- **Presentation**: Compose UI + ViewModel only. No business logic beyond UI orchestration.
+
+### 4) Compose + Material 3 (strict)
+- Use `MaterialTheme.colorScheme`, `typography`, `shapes`.
+- No hardcoded colors. Avoid hardcoded sizes; prefer theme/dimens when repeated.
+- UI text: resources (`strings.xml`). (Exception: internal debug-only strings.)
+
+### 5) MVI contract (strict)
+- `UiState`: immutable `data class`
+- `UiEvent`: `sealed class/interface`
+- `UiEffect`: one-shot via `Channel` + `receiveAsFlow()`
+- State: private mutable, public read-only `StateFlow`.
+
+---
+
 ## Task Tracking (TASKS.md)
 
 **IMPORTANT**: Always check and update `TASKS.md` before starting any task. Write TASKS.md content in Korean.
@@ -116,48 +175,46 @@ Do NOT accept Codex analysis as-is. Must conduct **Claude ↔ Codex debate**.
 
 ---
 
-## Non-negotiable rules (CRITICAL)
+## Sub Agents (Auto-Trigger)
 
-### 0) If unsure, ask first (NO GUESSING)
-- Do **not** invent APIs/classes/files. If something is unclear or missing, **ask questions** before coding.
-- If a requirement can be interpreted multiple ways, propose options and ask which one to implement.
+Project-defined Sub Agents must be used **automatically** when trigger conditions are met.
 
-### 0-1) MCP usage declaration (REQUIRED)
-- You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
-- If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
+### Agent List
 
-### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
-- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
-- If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
-- If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
+| Agent | Trigger Condition | Description |
+|-------|-------------------|-------------|
+| `spot-check` | New file created or 20+ lines modified | Code quality review (Claude↔Codex debate) |
+| `bug-hunter` | Error logs/stacktraces, build/test failures | Bug root cause analysis |
+| `cleanup-checker` | Before PR creation or commit | Detect unnecessary code/files |
+| `resource-checker` | Composable created/modified, UI code changes | Detect hardcoded resources |
+| `test-checker` | UseCase/Parser/Mapper/Repository/ViewModel changes | Test coverage check |
+| `ux-android-design-expert` | UI improvement request, new screen design | Toss-style UX design |
 
-### 0-3) Context7 required for API usage changes
-- When introducing or changing framework/library APIs (e.g., Compose modifiers, animations, paging/snap), **run Context7 first** to confirm the latest recommended APIs and deprecations.
-- If Context7 is not used, **stop and ask for explicit approval** to proceed without it.
+### Decision Tree (Situation → Agent)
 
-### 1) Read & Search before editing
-- Before changing a file: **open/read it first**. Never modify unseen code.
-- Before creating new code: **grep/search** for similar implementations and reuse patterns.
+```
+Code work completed?
+├─ New file / 20+ lines modified → spot-check
+├─ UI code changed → resource-checker
+└─ UseCase/Parser/VM changed → test-checker
 
-### 2) Minimal change
-- Touch only what’s required for the request.
-- No drive-by refactors, renames, formatting-only changes, or unrelated cleanup.
+Error occurred?
+└─ Build/test failure, runtime crash → bug-hunter
 
-### 3) Clean Architecture boundaries (strict)
-- **Domain**: pure Kotlin, **no Android/framework deps**.
-- **Data**: implements Domain repositories, depends on Domain only.
-- **Presentation**: Compose UI + ViewModel only. No business logic beyond UI orchestration.
+Preparing PR/commit?
+└─ cleanup-checker
 
-### 4) Compose + Material 3 (strict)
-- Use `MaterialTheme.colorScheme`, `typography`, `shapes`.
-- No hardcoded colors. Avoid hardcoded sizes; prefer theme/dimens when repeated.
-- UI text: resources (`strings.xml`). (Exception: internal debug-only strings.)
+UI improvement requested?
+└─ ux-android-design-expert (+ web search mandatory)
+```
 
-### 5) MVI contract (strict)
-- `UiState`: immutable `data class`
-- `UiEvent`: `sealed class/interface`
-- `UiEffect`: one-shot via `Channel` + `receiveAsFlow()`
-- State: private mutable, public read-only `StateFlow`.
+### Auto-Trigger Rules
+
+- Agents must be used **PROACTIVELY** when trigger conditions are met
+- Execute **before** user requests
+- If Agent is not used, **state the reason explicitly**
+
+> 📁 Detailed definitions: `.claude/agents/*.md`
 
 ---
 
@@ -203,6 +260,10 @@ Ask questions when needed. Especially:
 ### Step D) Implement incrementally
 - Implement smallest vertical slice first (domain → data → presentation only if needed).
 - Keep changes localized.
+- **After coding**: run appropriate Agents
+  - 20+ lines modified → `spot-check`
+  - UI code changed → `resource-checker`
+  - UseCase/Parser/VM changed → `test-checker`
 
 ### Step E) Verify (mandatory)
 Run commands and fix until green:
@@ -212,7 +273,11 @@ Run commands and fix until green:
   If instrumentation is relevant:
 - `./gradlew connectedAndroidTest` (only when device/emulator is available)
 
+**On failure**: run `bug-hunter` for root cause analysis
+
 **If you cannot run commands** (CI/tooling limits): say so explicitly and provide exact commands + expected outcomes.
+
+**Before PR/commit**: run `cleanup-checker`
 
 ---
 

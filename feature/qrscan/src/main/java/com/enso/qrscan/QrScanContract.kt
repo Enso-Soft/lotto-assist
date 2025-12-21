@@ -54,7 +54,8 @@ data class DuplicateConfirmation(
 data class QrScanUiState(
     val isScanning: Boolean = false,
     val scannedResult: LottoTicketInfo? = null,
-    val detectedBounds: QrCodeBounds? = null,
+    // detectedBounds는 리컴포지션 최적화를 위해 별도 StateFlow로 분리됨
+    // ViewModel.detectedBounds를 직접 수집하여 사용
     val isSuccess: Boolean = false,
     val isFlashEnabled: Boolean = false,
     val error: String? = null,

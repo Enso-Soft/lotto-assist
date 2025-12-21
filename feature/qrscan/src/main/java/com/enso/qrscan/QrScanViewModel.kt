@@ -1,6 +1,5 @@
 package com.enso.qrscan
 
-import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,17 +11,22 @@ import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.qrscan.parser.LottoQrParser
 import com.enso.util.lotto_date.LottoDate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class QrScanViewModel @Inject constructor(
     private val saveLottoTicketUseCase: SaveLottoTicketUseCase,
@@ -34,6 +38,13 @@ class QrScanViewModel @Inject constructor(
 
     private val _effect = Channel<QrScanEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
+
+    // 리컴포지션 최적화: detectedBounds를 별도 StateFlow로 분리
+    // UiState 갱신 없이 bounds만 업데이트하여 전체 화면 재컴포즈 방지
+    private val _detectedBoundsRaw = MutableStateFlow<QrCodeBounds?>(null)
+    val detectedBounds: StateFlow<QrCodeBounds?> = _detectedBoundsRaw
+        .debounce(30) // 30ms 디바운스로 프레임 과다 업데이트 방지
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // 마지막으로 처리한 QR URL (중복 방지용)
     private var lastProcessedQrUrl: String? = null
@@ -99,58 +110,42 @@ class QrScanViewModel @Inject constructor(
     }
 
     private fun updateDetectedBounds(bounds: QrCodeBounds?) {
-        _state.update {
-            if (bounds != null) {
-                // QR이 감지되면 bounds 업데이트
-                it.copy(detectedBounds = bounds)
-            } else {
-                // QR이 일시적으로 감지되지 않아도 기존 bounds 유지
-                it
-            }
+        // 리컴포지션 최적화: UiState 갱신 없이 별도 StateFlow로 업데이트
+        // 이렇게 하면 bounds 변경 시 전체 화면이 아닌 QrOverlay만 재컴포즈됨
+        if (bounds != null) {
+            _detectedBoundsRaw.value = bounds
         }
+        // null인 경우 기존 bounds 유지 (일시적 인식 실패 시 깜빡임 방지)
     }
 
     private fun processQrCode(content: String, bounds: QrCodeBounds) {
         // 이미 스캔된 결과가 있으면 무시 (저장 중이거나 중복 확인 중)
-        if (_state.value.scannedResult != null) {
-            Log.d("whk__", "Already have scanned result, ignoring")
-            return
-        }
-        
+        if (_state.value.scannedResult != null) return
+
         // 중복 확인 다이얼로그가 떠있으면 무시
-        if (_state.value.duplicateConfirmation != null) {
-            Log.d("whk__", "Duplicate confirmation in progress, ignoring")
-            return
-        }
-        
+        if (_state.value.duplicateConfirmation != null) return
+
         // 이미 처리 중이면 무시 (다중 QR 동시 처리 방지)
-        if (isProcessingQr) {
-            Log.d("whk__", "Already processing a QR, ignoring")
-            return
-        }
-        
+        if (isProcessingQr) return
+
         // 마지막으로 처리한 QR과 같으면 무시
-        if (content == lastProcessedQrUrl) {
-            Log.d("whk__", "Same QR as last processed, ignoring")
-            return
-        }
+        if (content == lastProcessedQrUrl) return
 
         viewModelScope.launch {
             // 처리 시작
             isProcessingQr = true
-            
+
             try {
                 val ticketInfo = LottoQrParser.parse(content)
-                Log.d("whk__", "ticketInfo : $ticketInfo")
                 if (ticketInfo != null) {
                     // 마지막 처리한 QR URL 저장
                     lastProcessedQrUrl = content
 
                     // 새로운 QR 처리 시작: 이전 결과 카드 즉시 제거
+                    _detectedBoundsRaw.value = bounds  // 별도 StateFlow로 bounds 업데이트
                     _state.update {
                         it.copy(
                             scannedResult = ticketInfo,
-                            detectedBounds = bounds,
                             isScanning = false,
                             error = null,
                             isCheckingWinning = true,
@@ -189,48 +184,49 @@ class QrScanViewModel @Inject constructor(
                     isProcessingQr = false
                 }
             } catch (e: Exception) {
-                Log.e("whk__", "QR 처리 중 에러: ${e.message}")
                 isProcessingQr = false
             }
         }
     }
 
     private suspend fun checkWinning(ticketInfo: com.enso.qrscan.parser.LottoTicketInfo): TicketWinningDetail? {
-        return try {
-            val lottoResult = getLottoResultUseCase(ticketInfo.round).getOrNull() ?: return null
+        return getLottoResultUseCase(ticketInfo.round).fold(
+            onSuccess = { lottoResult ->
+                val gameResults = ticketInfo.games.mapIndexed { index, gameInfo ->
+                    val matchedCount = gameInfo.numbers.count { it in lottoResult.numbers }
+                    val bonusMatched = lottoResult.bonusNumber in gameInfo.numbers
 
-            val gameResults = ticketInfo.games.mapIndexed { index, gameInfo ->
-                val matchedCount = gameInfo.numbers.count { it in lottoResult.numbers }
-                val bonusMatched = lottoResult.bonusNumber in gameInfo.numbers
+                    val rank = when {
+                        matchedCount == 6 -> 1               // 1등: 6개 일치
+                        matchedCount == 5 && bonusMatched -> 2  // 2등: 5개 + 보너스
+                        matchedCount == 5 -> 3               // 3등: 5개 일치
+                        matchedCount == 4 -> 4               // 4등: 4개 일치
+                        matchedCount == 3 -> 5               // 5등: 3개 일치
+                        else -> 0                            // 낙첨
+                    }
 
-                val rank = when {
-                    matchedCount == 6 -> 1               // 1등: 6개 일치
-                    matchedCount == 5 && bonusMatched -> 2  // 2등: 5개 + 보너스
-                    matchedCount == 5 -> 3               // 3등: 5개 일치
-                    matchedCount == 4 -> 4               // 4등: 4개 일치
-                    matchedCount == 3 -> 5               // 5등: 3개 일치
-                    else -> 0                            // 낙첨
+                    GameWinningInfo(
+                        gameLabel = ('A' + index).toString(),
+                        rank = rank,
+                        matchedCount = matchedCount,
+                        bonusMatched = bonusMatched
+                    )
                 }
 
-                GameWinningInfo(
-                    gameLabel = ('A' + index).toString(),
-                    rank = rank,
-                    matchedCount = matchedCount,
-                    bonusMatched = bonusMatched
+                TicketWinningDetail(
+                    winningNumbers = lottoResult.numbers,
+                    bonusNumber = lottoResult.bonusNumber,
+                    gameResults = gameResults,
+                    firstPrizeAmount = lottoResult.firstPrize.winAmount,
+                    drawDate = lottoResult.drawDate
                 )
+            },
+            onFailure = {
+                // 당첨 확인 실패는 티켓 저장에 영향을 주지 않으므로 null 반환
+                // UI에서 winningCheckFailed=true로 표시됨
+                null
             }
-
-            TicketWinningDetail(
-                winningNumbers = lottoResult.numbers,
-                bonusNumber = lottoResult.bonusNumber,
-                gameResults = gameResults,
-                firstPrizeAmount = lottoResult.firstPrize.winAmount,
-                drawDate = lottoResult.drawDate
-            )
-        } catch (e: Exception) {
-            Log.e("whk__", "당첨 확인 실패: ${e.message}")
-            null
-        }
+        )
     }
 
     private fun saveScannedTicket(qrUrl: String, forceOverwrite: Boolean = false) {
@@ -287,13 +283,13 @@ class QrScanViewModel @Inject constructor(
                         firstPrizeAmount = winningDetail?.firstPrizeAmount,
                         drawDate = drawDate
                     )
+                    _detectedBoundsRaw.value = null  // 새 QR 스캔을 위해 박스 초기화
                     _state.update {
                         it.copy(
                             isSaving = false,
                             savedTickets = listOf(summary) + it.savedTickets,
                             lastSavedTicket = summary,
                             scannedResult = null,
-                            detectedBounds = null,  // 새 QR 스캔을 위해 박스 초기화
                             isSuccess = false,
                             isScanning = true,
                             currentWinningDetail = null,
@@ -390,13 +386,13 @@ class QrScanViewModel @Inject constructor(
                 drawDate = drawDate
             )
             
-            // 저장 시와 동��하게 상태 업데이트 (DB 저장 없이 메모리에만)
+            // 저장 시와 동일하게 상태 업데이트 (DB 저장 없이 메모리에만)
+            _detectedBoundsRaw.value = null  // 박스 초기화
             _state.update {
                 it.copy(
                     savedTickets = listOf(summary) + it.savedTickets,
                     lastSavedTicket = summary,
                     scannedResult = null,  // 임시 스캔 결과 제거
-                    detectedBounds = null,  // 박스 초기화
                     isSuccess = false,
                     isScanning = true,
                     currentWinningDetail = null
@@ -409,10 +405,10 @@ class QrScanViewModel @Inject constructor(
     }
 
     private fun resumeScanning() {
+        _detectedBoundsRaw.value = null  // 에러 후 재시작 시 박스 초기화
         _state.update {
             it.copy(
                 scannedResult = null,
-                detectedBounds = null,  // 에러 후 재시작 시 박스 초기화
                 isSuccess = false,
                 isScanning = true,
                 currentWinningDetail = null

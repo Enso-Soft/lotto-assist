@@ -3,10 +3,11 @@ package com.enso.home
 import app.cash.turbine.test
 import com.enso.domain.model.FirstPrizeInfo
 import com.enso.domain.model.LottoResult
-import com.enso.domain.repository.LottoRepository
+import com.enso.domain.model.SyncResult
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
+import com.enso.domain.usecase.GetLocalLottoResultCountUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
 import com.enso.domain.usecase.GetLottoTicketsUseCase
 import com.enso.domain.usecase.SaveLottoTicketUseCase
@@ -42,7 +43,7 @@ class LottoResultViewModelTest {
     private lateinit var saveLottoTicketUseCase: SaveLottoTicketUseCase
     private lateinit var deleteLottoTicketUseCase: DeleteLottoTicketUseCase
     private lateinit var checkTicketWinningUseCase: CheckTicketWinningUseCase
-    private lateinit var lottoRepository: LottoRepository
+    private lateinit var getLocalLottoResultCountUseCase: GetLocalLottoResultCountUseCase
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -68,15 +69,17 @@ class LottoResultViewModelTest {
         saveLottoTicketUseCase = mockk()
         deleteLottoTicketUseCase = mockk()
         checkTicketWinningUseCase = mockk()
-        lottoRepository = mockk()
+        getLocalLottoResultCountUseCase = mockk()
 
         coEvery { getAllLottoResultsUseCase() } returns flowOf(emptyList())
         coEvery { getLottoTicketsUseCase(any()) } returns flowOf(emptyList())
-        coEvery { syncLottoResultsUseCase(any()) } returns Result.success(Unit)
+        coEvery { syncLottoResultsUseCase(any()) } returns Result.success(
+            SyncResult(successCount = 0, failedCount = 0, totalCount = 0)
+        )
         coEvery { saveLottoTicketUseCase(any()) } returns Result.success(1L)
         coEvery { deleteLottoTicketUseCase(any()) } returns Result.success(Unit)
         coEvery { checkTicketWinningUseCase(any()) } returns Result.success(Unit)
-        coEvery { lottoRepository.getLocalCount() } returns 1
+        coEvery { getLocalLottoResultCountUseCase() } returns 1
     }
 
     @After
@@ -204,7 +207,7 @@ class LottoResultViewModelTest {
             saveLottoTicketUseCase = saveLottoTicketUseCase,
             deleteLottoTicketUseCase = deleteLottoTicketUseCase,
             checkTicketWinningUseCase = checkTicketWinningUseCase,
-            lottoRepository = lottoRepository
+            getLocalLottoResultCountUseCase = getLocalLottoResultCountUseCase
         )
     }
 }

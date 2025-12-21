@@ -67,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -103,6 +104,7 @@ fun LottoResultScreen(
     onQrScanClick: () -> Unit = {}
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showManualInputDialog by remember { mutableStateOf(false) }
     var showRoundBottomSheet by remember { mutableStateOf(false) }
@@ -118,7 +120,12 @@ fun LottoResultScreen(
                     snackbarHostState.showSnackbar(effect.message)
                 }
                 is LottoResultEffect.SyncCompleted -> {
-                    snackbarHostState.showSnackbar("동기화 완료")
+                    snackbarHostState.showSnackbar(context.getString(R.string.home_sync_completed))
+                }
+                is LottoResultEffect.PartialSyncCompleted -> {
+                    snackbarHostState.showSnackbar(
+                        context.getString(R.string.home_partial_sync_message, effect.failedCount, effect.successCount)
+                    )
                 }
                 is LottoResultEffect.NavigateToQrScan -> {
                     onQrScanClick()
@@ -127,7 +134,7 @@ fun LottoResultScreen(
                     showManualInputDialog = true
                 }
                 is LottoResultEffect.ShowTicketSaved -> {
-                    snackbarHostState.showSnackbar("${effect.count}개의 번호가 저장되었습니다")
+                    snackbarHostState.showSnackbar(context.getString(R.string.home_ticket_saved_message, effect.count))
                 }
                 is LottoResultEffect.ShowWinningResult -> {
                     // 당첨/낙첨 스낵바 표시 안 함 (배지로 충분)
@@ -151,7 +158,7 @@ fun LottoResultScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (showAllTickets) "내 로또 전체보기" else "로또 홈",
+                        if (showAllTickets) stringResource(R.string.home_title_all_tickets) else stringResource(R.string.home_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -165,7 +172,7 @@ fun LottoResultScreen(
                         IconButton(onClick = { showAllTickets = false }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "닫기",
+                                contentDescription = stringResource(R.string.home_close),
                                 tint = TextMainLight
                             )
                         }
@@ -176,7 +183,7 @@ fun LottoResultScreen(
                         IconButton(onClick = { /* 설정 */ }) {
                             Icon(
                                 Icons.Default.Settings,
-                                contentDescription = "설정",
+                                contentDescription = stringResource(R.string.home_settings),
                                 tint = TextMainLight
                             )
                         }
@@ -311,7 +318,7 @@ private fun WinningResultSection(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "당첨 축하드려요!",
+                    text = stringResource(R.string.home_winning_congrats),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Primary
@@ -325,19 +332,19 @@ private fun WinningResultSection(
             modifier = Modifier.clickable(onClick = onRoundClick)
         ) {
             Text(
-                text = "${selectedResult?.round ?: 0}회",
+                text = stringResource(R.string.home_round_format, selectedResult?.round ?: 0),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextMainLight
             )
             Icon(
                 Icons.Default.KeyboardArrowDown,
-                contentDescription = "회차 선택",
+                contentDescription = stringResource(R.string.home_select_round),
                 modifier = Modifier.size(32.dp),
                 tint = TextSubLight
             )
             Text(
-                text = "당첨결과",
+                text = stringResource(R.string.home_winning_result),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextMainLight
@@ -427,7 +434,7 @@ private fun WinningNumbersCard(result: LottoResult) {
                 ) {
                     MediumLottoBall(number = result.bonusNumber)
                     Text(
-                        text = "보너스",
+                        text = stringResource(R.string.home_bonus),
                         fontSize = 9.sp,
                         color = TextSubLight,
                         modifier = Modifier.padding(top = 2.dp)
@@ -442,7 +449,7 @@ private fun WinningNumbersCard(result: LottoResult) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "1등 당첨금 (${result.firstPrize.winnerCount}명)",
+                    text = stringResource(R.string.home_first_prize_format, result.firstPrize.winnerCount),
                     fontSize = 14.sp,
                     color = TextSubLight
                 )
@@ -455,7 +462,7 @@ private fun WinningNumbersCard(result: LottoResult) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "총 판매금액 ${formatCurrencyShort(result.firstPrize.totalSalesAmount)}",
+                    text = stringResource(R.string.home_total_sales_format, formatCurrencyShort(result.firstPrize.totalSalesAmount)),
                     fontSize = 12.sp,
                     color = TextSubLight
                 )
@@ -494,7 +501,7 @@ private fun ActionButtonsSection(
                     fontSize = 28.sp
                 )
                 Text(
-                    "QR 당첨 확인",
+                    stringResource(R.string.home_qr_check),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -520,7 +527,7 @@ private fun ActionButtonsSection(
                     tint = Primary
                 )
                 Text(
-                    "번호 직접 입력",
+                    stringResource(R.string.home_manual_input),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = TextMainLight
@@ -548,13 +555,13 @@ private fun MyLottoSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "내 로또",
+                stringResource(R.string.home_my_lotto),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextMainLight
             )
             Text(
-                "전체보기",
+                stringResource(R.string.home_view_all),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSubLight,
                 modifier = Modifier.clickable(onClick = onViewAll)
@@ -601,7 +608,7 @@ private fun EmptyTicketCard() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요",
+                stringResource(R.string.home_empty_tickets),
                 textAlign = TextAlign.Center,
                 color = TextSubLight,
                 fontSize = 14.sp
@@ -651,14 +658,14 @@ private fun TicketCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "제 ${ticket.round}회",
+                        stringResource(R.string.home_round_prefix_format, ticket.round),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = TextMainLight
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "${formatDrawDate(ticket.registeredDate)} 등록",
+                        stringResource(R.string.home_registered_format, formatDrawDate(ticket.registeredDate)),
                         fontSize = 11.sp,
                         color = TextSubLight
                     )
@@ -669,7 +676,7 @@ private fun TicketCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "삭제",
+                        contentDescription = stringResource(R.string.home_delete),
                         tint = TextSubLight,
                         modifier = Modifier.size(18.dp)
                     )
@@ -808,13 +815,13 @@ private fun PastDrawsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "지난 회차 정보",
+                stringResource(R.string.home_past_draws),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextMainLight
             )
             Text(
-                "더보기",
+                stringResource(R.string.home_view_more),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSubLight
             )
@@ -855,7 +862,7 @@ private fun PastDrawItem(
         ) {
             Column {
                 Text(
-                    "${result.round}회",
+                    stringResource(R.string.home_round_format, result.round),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = TextMainLight
@@ -903,7 +910,7 @@ private fun RoundSelectionBottomSheet(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Text(
-            "회차 선택",
+            stringResource(R.string.home_select_round),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -933,7 +940,7 @@ private fun RoundSelectionBottomSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "${result.round}회",
+                            stringResource(R.string.home_round_format, result.round),
                             fontWeight = if (result.round == selectedRound) FontWeight.Bold else FontWeight.Normal,
                             fontSize = 18.sp,
                             color = if (result.round == selectedRound) Primary else TextMainLight
@@ -960,26 +967,26 @@ private fun BottomNavigationBar() {
         NavigationBarItem(
             selected = true,
             onClick = { },
-            icon = { Icon(Icons.Default.Home, "홈") },
-            label = { Text("홈", fontSize = 10.sp) }
+            icon = { Icon(Icons.Default.Home, stringResource(R.string.home_nav_home)) },
+            label = { Text(stringResource(R.string.home_nav_home), fontSize = 10.sp) }
         )
         NavigationBarItem(
             selected = false,
             onClick = { },
-            icon = { Icon(Icons.Default.List, "당첨내역") },
-            label = { Text("당첨내역", fontSize = 10.sp) }
+            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_history)) },
+            label = { Text(stringResource(R.string.home_nav_history), fontSize = 10.sp) }
         )
         NavigationBarItem(
             selected = false,
             onClick = { },
-            icon = { Icon(Icons.Default.List, "내 번호") },
-            label = { Text("내 번호", fontSize = 10.sp) }
+            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_my_numbers)) },
+            label = { Text(stringResource(R.string.home_nav_my_numbers), fontSize = 10.sp) }
         )
         NavigationBarItem(
             selected = false,
             onClick = { },
-            icon = { Icon(Icons.Default.List, "판매점") },
-            label = { Text("판매점", fontSize = 10.sp) }
+            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_stores)) },
+            label = { Text(stringResource(R.string.home_nav_stores), fontSize = 10.sp) }
         )
     }
 }
@@ -1049,7 +1056,7 @@ private fun AllTicketsContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요",
+                stringResource(R.string.home_empty_tickets),
                 textAlign = TextAlign.Center,
                 color = TextSubLight,
                 fontSize = 14.sp
@@ -1132,7 +1139,7 @@ private fun AllTicketsHeader(
                     color = Primary
                 )
                 Text(
-                    text = "전체 번호",
+                    text = stringResource(R.string.home_total_numbers),
                     fontSize = 12.sp,
                     color = TextSubLight,
                     modifier = Modifier.padding(top = 4.dp)
@@ -1156,7 +1163,7 @@ private fun AllTicketsHeader(
                     color = com.enso.home.ui.theme.WinningGreen
                 )
                 Text(
-                    text = "당첨 (1-5등)",
+                    text = stringResource(R.string.home_winning_count),
                     fontSize = 12.sp,
                     color = TextSubLight,
                     modifier = Modifier.padding(top = 4.dp)
@@ -1189,7 +1196,7 @@ private fun SortButton(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "정렬",
+                    text = stringResource(R.string.home_sort),
                     fontSize = 14.sp,
                     color = TextSubLight
                 )
@@ -1202,7 +1209,7 @@ private fun SortButton(
             }
             Icon(
                 Icons.Default.ArrowDropDown,
-                contentDescription = "정렬 선택",
+                contentDescription = stringResource(R.string.home_sort_select),
                 tint = TextSubLight,
                 modifier = Modifier.size(24.dp)
             )
@@ -1230,7 +1237,7 @@ private fun SortSelectionBottomSheet(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
-                "정렬 기준",
+                stringResource(R.string.home_sort_criteria),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextMainLight,
@@ -1266,7 +1273,7 @@ private fun SortSelectionBottomSheet(
                         if (sortType == currentSortType) {
                             Icon(
                                 Icons.Default.Check,
-                                contentDescription = "선택됨",
+                                contentDescription = stringResource(R.string.home_selected),
                                 tint = Primary,
                                 modifier = Modifier.size(20.dp)
                             )

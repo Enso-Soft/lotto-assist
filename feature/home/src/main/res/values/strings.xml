@@ -4,4 +4,65 @@
     <string name="dialog_delete_ticket_message">삭제한 번호는 복구할 수 없어요</string>
     <string name="dialog_delete_ticket_confirm">삭제하기</string>
     <string name="dialog_delete_ticket_cancel">취소</string>
+
+    <!-- 화면 제목 -->
+    <string name="home_title">로또 홈</string>
+    <string name="home_title_all_tickets">내 로또 전체보기</string>
+
+    <!-- 앱바 아이콘 설명 -->
+    <string name="home_close">닫기</string>
+    <string name="home_settings">설정</string>
+
+    <!-- 스낵바/효과 메시지 -->
+    <string name="home_sync_completed">동기화 완료</string>
+    <string name="home_partial_sync_message">%1$d개 회차 동기화 실패 (%2$d개 성공)</string>
+    <string name="home_ticket_saved_message">%d개의 번호가 저장되었습니다</string>
+
+    <!-- 당첨 결과 섹션 -->
+    <string name="home_winning_congrats">당첨 축하드려요!</string>
+    <string name="home_round_format">%d회</string>
+    <string name="home_round_prefix_format">제 %d회</string>
+    <string name="home_winning_result">당첨결과</string>
+    <string name="home_select_round">회차 선택</string>
+    <string name="home_bonus">보너스</string>
+    <string name="home_first_prize_format">1등 당첨금 (%d명)</string>
+    <string name="home_total_sales_format">총 판매금액 %s</string>
+
+    <!-- 액션 버튼 -->
+    <string name="home_qr_check">QR 당첨 확인</string>
+    <string name="home_manual_input">번호 직접 입력</string>
+
+    <!-- 내 로또 섹션 -->
+    <string name="home_my_lotto">내 로또</string>
+    <string name="home_view_all">전체보기</string>
+    <string name="home_empty_tickets">저장된 로또 번호가 없습니다\nQR 스캔 또는 직접 입력으로 추가해보세요</string>
+    <string name="home_registered_format">%s 등록</string>
+    <string name="home_delete">삭제</string>
+
+    <!-- 지난 회차 섹션 -->
+    <string name="home_past_draws">지난 회차 정보</string>
+    <string name="home_view_more">더보기</string>
+
+    <!-- 전체보기 화면 -->
+    <string name="home_total_numbers">전체 번호</string>
+    <string name="home_winning_count">당첨 (1-5등)</string>
+    <string name="home_sort">정렬</string>
+    <string name="home_sort_select">정렬 선택</string>
+    <string name="home_sort_criteria">정렬 기준</string>
+    <string name="home_selected">선택됨</string>
+
+    <!-- 네비게이션 바 -->
+    <string name="home_nav_home">홈</string>
+    <string name="home_nav_history">당첨내역</string>
+    <string name="home_nav_my_numbers">내 번호</string>
+    <string name="home_nav_stores">판매점</string>
+
+    <!-- 직접 입력 다이얼로그 -->
+    <string name="dialog_manual_input_title">번호 직접 입력</string>
+    <string name="dialog_auto_select">자동 선택</string>
+    <string name="dialog_selected_numbers_format">선택된 번호 (%d/6)</string>
+    <string name="dialog_select_hint">1~45 사이의 번호를 6개 선택하세요</string>
+    <string name="dialog_reset">초기화</string>
+    <string name="dialog_save">저장</string>
+    <string name="dialog_cancel">취소</string>
 </resources>
