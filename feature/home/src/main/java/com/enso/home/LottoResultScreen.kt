@@ -200,18 +200,18 @@ fun LottoResultScreen(
                 onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
             )
 
+            // 나의 당첨 통계
+            WinningStatisticsWidget(
+                statistics = uiState.winningStatistics,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             // 지난 회차 정보
             PastDrawsSection(
                 results = uiState.lottoResults.take(3),
                 onSelectResult = { result ->
                     viewModel.onEvent(LottoResultEvent.SelectResult(result))
                 }
-            )
-
-            // 나의 당첨 통계
-            WinningStatisticsWidget(
-                statistics = uiState.winningStatistics,
-                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
