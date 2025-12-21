@@ -53,6 +53,7 @@
 
     <!-- 네비게이션 바 -->
     <string name="home_nav_home">홈</string>
+    <string name="home_nav_my_lotto">내 로또</string>
     <string name="home_nav_history">당첨내역</string>
     <string name="home_nav_my_numbers">내 번호</string>
     <string name="home_nav_stores">판매점</string>

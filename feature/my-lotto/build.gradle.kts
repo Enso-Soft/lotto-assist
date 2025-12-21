@@ -1,17 +1,11 @@
 plugins {
-    id("lotto.android.application")
+    id("lotto.android.library")
     id("lotto.android.hilt")
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.enso.lotto_assist"
-
-    defaultConfig {
-        applicationId = "com.enso.lotto_assist"
-        versionCode = 1
-        versionName = "1.0"
-    }
+    namespace = "com.enso.mylotto"
 
     buildFeatures {
         compose = true
@@ -19,21 +13,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:home"))
-    implementation(project(":feature:qrscan"))
-    implementation(project(":feature:my-lotto"))
-    implementation(project(":core:data"))
     implementation(project(":core:domain"))
-    implementation(project(":core:network"))
-    implementation(project(":core:database"))
     implementation(project(":core:util"))
     implementation(project(":core:di"))
+    implementation(project(":feature:home"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     // Compose
@@ -48,8 +33,16 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // Test
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

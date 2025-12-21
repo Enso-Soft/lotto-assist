@@ -28,9 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -43,8 +41,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -77,12 +73,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
+import com.enso.home.ui.components.AllTicketsHeader
 import com.enso.home.ui.components.ConfirmDeleteDialog
 import com.enso.home.ui.components.HighlightedSmallLottoBall
 import com.enso.home.ui.components.LottoBall
 import com.enso.home.ui.components.ManualInputDialog
 import com.enso.home.ui.components.MediumLottoBall
 import com.enso.home.ui.components.SmallLottoBall
+import com.enso.home.ui.components.SortButton
+import com.enso.home.ui.components.SortSelectionBottomSheet
+import com.enso.home.ui.components.TicketCard
 import com.enso.home.ui.components.TinyLottoBall
 import com.enso.home.ui.components.WinningBadge
 import com.enso.home.ui.components.WinningStatisticsWidget
@@ -102,7 +102,8 @@ import java.util.Locale
 @Composable
 fun LottoResultScreen(
     viewModel: LottoResultViewModel = hiltViewModel(),
-    onQrScanClick: () -> Unit = {}
+    onQrScanClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -111,8 +112,6 @@ fun LottoResultScreen(
     var showRoundBottomSheet by remember { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-
-    var showAllTickets by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -137,9 +136,6 @@ fun LottoResultScreen(
                 is LottoResultEffect.ShowTicketSaved -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.home_ticket_saved_message, effect.count))
                 }
-                is LottoResultEffect.ShowWinningResult -> {
-                    // 당첨/낙첨 스낵바 표시 안 함 (배지로 충분)
-                }
             }
         }
     }
@@ -159,7 +155,7 @@ fun LottoResultScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (showAllTickets) stringResource(R.string.home_title_all_tickets) else stringResource(R.string.home_title),
+                        stringResource(R.string.home_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -168,113 +164,57 @@ fun LottoResultScreen(
                     containerColor = BackgroundLight,
                     titleContentColor = TextMainLight
                 ),
-                navigationIcon = {
-                    if (showAllTickets) {
-                        IconButton(onClick = { showAllTickets = false }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.home_close),
-                                tint = TextMainLight
-                            )
-                        }
-                    }
-                },
                 actions = {
-                    if (!showAllTickets) {
-                        IconButton(onClick = { /* 설정 */ }) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = stringResource(R.string.home_settings),
-                                tint = TextMainLight
-                            )
-                        }
+                    IconButton(onClick = { /* 설정 */ }) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.home_settings),
+                            tint = TextMainLight
+                        )
                     }
                 }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            if (!showAllTickets) {
-                BottomNavigationBar()
-            }
-        },
-        containerColor = BackgroundLight
+        containerColor = BackgroundLight,
+        modifier = modifier
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            if (showAllTickets) {
-                // 전체보기 화면
-                AllTicketsContent(
-                    tickets = uiState.tickets,
-                    lottoResults = uiState.lottoResults,
-                    currentRound = uiState.currentRound,
-                    currentSortType = uiState.ticketSortType,
-                    onCheckWinning = { ticketId ->
-                        viewModel.onEvent(LottoResultEvent.CheckWinning(ticketId))
-                    },
-                    onDeleteTicket = { ticketId ->
-                        viewModel.onEvent(LottoResultEvent.DeleteTicket(ticketId))
-                    },
-                    onSortTypeChange = { sortType ->
-                        viewModel.onEvent(LottoResultEvent.ChangeSortType(sortType))
-                    }
-                )
-            } else {
-                // 홈 화면
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // 당첨 결과 섹션
-                    WinningResultSection(
-                        selectedResult = uiState.selectedResult,
-                        isLoading = uiState.isSyncing,
-                        onRoundClick = { showRoundBottomSheet = true }
-                    )
+            // 당첨 결과 섹션
+            WinningResultSection(
+                selectedResult = uiState.selectedResult,
+                isLoading = uiState.isSyncing,
+                onRoundClick = { showRoundBottomSheet = true }
+            )
 
-                    // QR 스캔 / 번호 입력 버튼
-                    ActionButtonsSection(
-                        onQrScanClick = { viewModel.onEvent(LottoResultEvent.OpenQrScan) },
-                        onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
-                    )
+            // QR 스캔 / 번호 입력 버튼
+            ActionButtonsSection(
+                onQrScanClick = { viewModel.onEvent(LottoResultEvent.OpenQrScan) },
+                onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
+            )
 
-                    // 나의 당첨 통계 위젯
-                    WinningStatisticsWidget(
-                        statistics = uiState.winningStatistics,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            // 나의 당첨 통계
+            WinningStatisticsWidget(
+                statistics = uiState.winningStatistics,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                    // 내 로또 섹션
-                    MyLottoSection(
-                        tickets = uiState.tickets,
-                        lottoResults = uiState.lottoResults,
-                        currentRound = uiState.currentRound,
-                        onCheckWinning = { ticketId ->
-                            viewModel.onEvent(LottoResultEvent.CheckWinning(ticketId))
-                        },
-                        onDeleteTicket = { ticketId ->
-                            viewModel.onEvent(LottoResultEvent.DeleteTicket(ticketId))
-                        },
-                        onViewAll = { showAllTickets = true }
-                    )
-
-                    // 지난 회차 정보
-                    PastDrawsSection(
-                        results = uiState.lottoResults.take(3),
-                        onSelectResult = { result ->
-                            viewModel.onEvent(LottoResultEvent.SelectResult(result))
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
+            // 지난 회차 정보
+            PastDrawsSection(
+                results = uiState.lottoResults.take(3),
+                onSelectResult = { result ->
+                    viewModel.onEvent(LottoResultEvent.SelectResult(result))
                 }
-            }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -545,270 +485,6 @@ private fun ActionButtonsSection(
 }
 
 @Composable
-private fun MyLottoSection(
-    tickets: List<LottoTicket>,
-    lottoResults: List<LottoResult>,
-    currentRound: Int,
-    onCheckWinning: (Long) -> Unit,
-    onDeleteTicket: (Long) -> Unit,
-    onViewAll: () -> Unit = {}
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                stringResource(R.string.home_my_lotto),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextMainLight
-            )
-            Text(
-                stringResource(R.string.home_view_all),
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSubLight,
-                modifier = Modifier.clickable(onClick = onViewAll)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (tickets.isEmpty()) {
-            EmptyTicketCard()
-        } else {
-            val pagerState = rememberPagerState(pageCount = { tickets.size })
-
-            HorizontalPager(
-                state = pagerState,
-                contentPadding = PaddingValues(horizontal = 40.dp),
-                pageSpacing = 12.dp,
-                modifier = Modifier
-            ) { page ->
-                val ticket = tickets[page]
-                TicketCard(
-                    ticket = ticket,
-                    lottoResult = lottoResults.find { it.round == ticket.round },
-                    currentRound = currentRound,
-                    onCheckWinning = { onCheckWinning(ticket.ticketId) },
-                    onDelete = { onDeleteTicket(ticket.ticketId) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyTicketCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = CardLight),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(40.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                stringResource(R.string.home_empty_tickets),
-                textAlign = TextAlign.Center,
-                color = TextSubLight,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun TicketCard(
-    ticket: LottoTicket,
-    lottoResult: LottoResult?,
-    currentRound: Int,
-    onCheckWinning: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val isDrawComplete = ticket.round <= currentRound
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(ticket.ticketId, ticket.isChecked, isDrawComplete) {
-        if (isDrawComplete && !ticket.isChecked) {
-            onCheckWinning()
-        }
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(),
-        colors = CardDefaults.cardColors(containerColor = CardLight),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 티켓 헤더: 회차 + 등록일 + 삭제 버튼
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        stringResource(R.string.home_round_prefix_format, ticket.round),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = TextMainLight
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        stringResource(R.string.home_registered_format, formatDrawDate(ticket.registeredDate)),
-                        fontSize = 11.sp,
-                        color = TextSubLight
-                    )
-                }
-                IconButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.home_delete),
-                        tint = TextSubLight,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            // 당첨번호 및 당첨금 정보
-            if (lottoResult != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = Primary.copy(alpha = 0.05f),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(vertical = 12.dp, horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(9.dp)
-                ) {
-                    // 당첨 번호 + 보너스 (가운데 정렬)
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 당첨 번호 6개
-                        lottoResult.numbers.forEach { number ->
-                            SmallLottoBall(number = number)
-                            Spacer(modifier = Modifier.width(3.dp))
-                        }
-
-                        // 구분선
-                        Text(
-                            text = "+",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextSubLight,
-                            modifier = Modifier.padding(horizontal = 3.dp)
-                        )
-
-                        // 보너스 번호
-                        SmallLottoBall(number = lottoResult.bonusNumber)
-                    }
-
-                    // 당첨금 (가운데 정렬, 문구 없음)
-                    Text(
-                        text = formatPrizeAmount(lottoResult.firstPrize.winAmount),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Primary
-                    )
-                }
-            }
-
-            // 게임 목록
-            ticket.games.forEach { game ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 게임 레이블 (A, B, C, D, E)
-                    Text(
-                        game.gameLabel,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = Primary,
-                        modifier = Modifier.width(16.dp)
-                    )
-
-                    // 당첨 배지 + 게임 타입 (세로로 배치)
-                    Column(
-                        modifier = Modifier.width(25.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // 당첨/낙첨 배지
-                        if (isDrawComplete && game.winningRank > 0) {
-                            WinningBadge(rank = game.winningRank)
-                        }
-                        // 자동/수동
-                        Text(
-                            game.gameType.displayName,
-                            fontSize = 12.sp,
-                            color = TextSubLight
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // 번호들 (당첨번호가 있으면 매칭된 번호만 하이라이트)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        if (lottoResult != null && isDrawComplete) {
-                            game.numbers.forEach { number ->
-                                HighlightedSmallLottoBall(
-                                    number = number,
-                                    isMatched = number in lottoResult.numbers
-                                )
-                            }
-                        } else {
-                            game.numbers.forEach { number ->
-                                SmallLottoBall(number = number)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (showDeleteDialog) {
-        ConfirmDeleteDialog(
-            onDismiss = { showDeleteDialog = false },
-            onConfirm = {
-                showDeleteDialog = false
-                onDelete()
-            }
-        )
-    }
-}
-
-@Composable
 private fun PastDrawsSection(
     results: List<LottoResult>,
     onSelectResult: (LottoResult) -> Unit
@@ -966,38 +642,6 @@ private fun RoundSelectionBottomSheet(
     }
 }
 
-@Composable
-private fun BottomNavigationBar() {
-    NavigationBar(
-        containerColor = CardLight
-    ) {
-        NavigationBarItem(
-            selected = true,
-            onClick = { },
-            icon = { Icon(Icons.Default.Home, stringResource(R.string.home_nav_home)) },
-            label = { Text(stringResource(R.string.home_nav_home), fontSize = 10.sp) }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { },
-            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_history)) },
-            label = { Text(stringResource(R.string.home_nav_history), fontSize = 10.sp) }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { },
-            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_my_numbers)) },
-            label = { Text(stringResource(R.string.home_nav_my_numbers), fontSize = 10.sp) }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { },
-            icon = { Icon(Icons.Default.List, stringResource(R.string.home_nav_stores)) },
-            label = { Text(stringResource(R.string.home_nav_stores), fontSize = 10.sp) }
-        )
-    }
-}
-
 private fun formatCurrency(amount: Long): String {
     val billions = amount / 100000000
     val millions = (amount % 100000000) / 10000
@@ -1043,253 +687,4 @@ private fun formatPrizeAmount(amount: Long): String {
     }
 }
 
-@Composable
-private fun AllTicketsContent(
-    tickets: List<LottoTicket>,
-    lottoResults: List<LottoResult>,
-    currentRound: Int,
-    currentSortType: TicketSortType,
-    onCheckWinning: (Long) -> Unit,
-    onDeleteTicket: (Long) -> Unit,
-    onSortTypeChange: (TicketSortType) -> Unit
-) {
-    var showSortBottomSheet by remember { mutableStateOf(false) }
 
-    if (tickets.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(40.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                stringResource(R.string.home_empty_tickets),
-                textAlign = TextAlign.Center,
-                color = TextSubLight,
-                fontSize = 14.sp
-            )
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 통계 헤더
-            item {
-                AllTicketsHeader(
-                    totalCount = tickets.size,
-                    winningCount = tickets.sumOf { ticket ->
-                        ticket.games.count { it.winningRank in 1..5 }
-                    }
-                )
-            }
-
-            // 정렬 선택 버튼
-            item {
-                SortButton(
-                    currentSortType = currentSortType,
-                    onClick = { showSortBottomSheet = true }
-                )
-            }
-
-            // 전체 티켓 목록
-            items(tickets.size) { index ->
-                val ticket = tickets[index]
-                TicketCard(
-                    ticket = ticket,
-                    lottoResult = lottoResults.find { it.round == ticket.round },
-                    currentRound = currentRound,
-                    onCheckWinning = { onCheckWinning(ticket.ticketId) },
-                    onDelete = { onDeleteTicket(ticket.ticketId) }
-                )
-            }
-        }
-    }
-
-    if (showSortBottomSheet) {
-        SortSelectionBottomSheet(
-            currentSortType = currentSortType,
-            onSelectSortType = { sortType ->
-                onSortTypeChange(sortType)
-                showSortBottomSheet = false
-            },
-            onDismiss = { showSortBottomSheet = false }
-        )
-    }
-}
-
-@Composable
-private fun AllTicketsHeader(
-    totalCount: Int,
-    winningCount: Int
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f)),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "$totalCount",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Primary
-                )
-                Text(
-                    text = stringResource(R.string.home_total_numbers),
-                    fontSize = 12.sp,
-                    color = TextSubLight,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(50.dp)
-                    .background(TextSubLight.copy(alpha = 0.2f))
-            )
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "$winningCount",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = com.enso.home.ui.theme.WinningGreen
-                )
-                Text(
-                    text = stringResource(R.string.home_winning_count),
-                    fontSize = 12.sp,
-                    color = TextSubLight,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SortButton(
-    currentSortType: TicketSortType,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = CardLight),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.home_sort),
-                    fontSize = 14.sp,
-                    color = TextSubLight
-                )
-                Text(
-                    text = currentSortType.displayName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Primary
-                )
-            }
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = stringResource(R.string.home_sort_select),
-                tint = TextSubLight,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SortSelectionBottomSheet(
-    currentSortType: TicketSortType,
-    onSelectSortType: (TicketSortType) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = CardLight
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Text(
-                stringResource(R.string.home_sort_criteria),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextMainLight,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            TicketSortType.values().forEach { sortType ->
-                Card(
-                    onClick = { onSelectSortType(sortType) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (sortType == currentSortType) {
-                            Primary.copy(alpha = 0.1f)
-                        } else {
-                            CardLight
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            sortType.displayName,
-                            fontWeight = if (sortType == currentSortType) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 16.sp,
-                            color = if (sortType == currentSortType) Primary else TextMainLight
-                        )
-                        if (sortType == currentSortType) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = stringResource(R.string.home_selected),
-                                tint = Primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}

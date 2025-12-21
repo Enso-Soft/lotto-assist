@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.enso.lotto_assist.R
-import com.enso.home.HomeActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -27,7 +26,7 @@ class Splash : AppCompatActivity() {
 
         viewModel.getLotto()
 
-        startActivity(Intent(this@Splash, HomeActivity::class.java))
-        //finish()
+        startActivity(Intent(this@Splash, MainActivity::class.java))
+        finish()
     }
 }
