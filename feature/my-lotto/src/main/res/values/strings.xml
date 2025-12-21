@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen titles -->
+    <string name="my_lotto_title">내 로또</string>
+    <string name="my_lotto_back">뒤로</string>
+
+    <!-- Section headers -->
+    <string name="my_lotto_registered_tickets">등록된 티켓 (%d)</string>
+
+    <!-- Empty state -->
+    <string name="my_lotto_empty_message">등록된 티켓이 없습니다.\n홈 화면에서 QR 스캔 또는\n번호 직접 입력으로 티켓을 등록해보세요.</string>
+
+    <!-- Actions -->
+    <string name="my_lotto_refresh">새로고침</string>
+    <string name="my_lotto_sort">정렬</string>
+
+    <!-- Snackbar messages -->
+    <string name="my_lotto_ticket_deleted">티켓이 삭제되었습니다</string>
+    <string name="my_lotto_refresh_complete">새로고침 완료</string>
+    <string name="my_lotto_winning_rank">%d등 당첨!</string>
+    <string name="my_lotto_check_complete">당첨 확인 완료</string>
+
+    <!-- Error messages -->
+    <string name="my_lotto_error_delete">티켓 삭제 실패</string>
+    <string name="my_lotto_error_check_winning">당첨 확인 실패</string>
+    <string name="my_lotto_error_load_statistics">통계 로드 실패</string>
+</resources>
