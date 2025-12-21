@@ -2,364 +2,197 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Language**: Always respond in Korean (한국어) unless explicitly asked otherwise.
+## Core AI Instructions
 
----
+- **Memory Efficiency**: Use specialized sub-agents for complex tasks
+- **Tool Optimization**: Evaluate results before proceeding to next steps
+- **Parallel Processing**: Run independent tasks concurrently
+- **Verification**: Always verify critical operations
 
-## Non-negotiable rules (CRITICAL)
+## Sub-Agent System
 
-> ⚠️ **These rules must be followed strictly. No exceptions.**
+This project uses specialized sub-agents defined in `.claude/agents/`. Use the Task tool to invoke them.
 
-### 0) If unsure, ask first (NO GUESSING)
-- Do **not** invent APIs/classes/files. If something is unclear or missing, **ask questions** before coding.
-- If a requirement can be interpreted multiple ways, propose options and ask which one to implement.
+### Available Agents
 
-### 0-1) MCP usage declaration (REQUIRED)
-- You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
-- If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
+| Agent | Description | When to Use |
+|-------|-------------|-------------|
+| `planner` | Requirements analysis, task decomposition, priority decisions | New feature development, refactoring start |
+| `ux-engineer` | Screen design, component structure definition | UI design work |
+| `ui-component-builder` | Reusable Compose component implementation | UI component creation |
+| `code-writer` | Feature implementation (Domain, Data, Presentation) | Business logic and feature code |
+| `test-engineer` | Unit/UI/Integration test writing | Test code creation and execution |
+| `code-critic` | Code review, improvement proposals, debates | Code quality review |
+| `performance-optimizer` | Recomposition optimization, memory leak detection | Performance optimization |
 
-### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
-- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
-- If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
-- If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
+### Mandatory Workflow (Agent-driven)
 
-### 0-3) Context7 required for API usage changes
-- When introducing or changing framework/library APIs (e.g., Compose modifiers, animations, paging/snap), **run Context7 first** to confirm the latest recommended APIs and deprecations.
-- If Context7 is not used, **stop and ask for explicit approval** to proceed without it.
-
-### 0-4) Sub Agent auto-trigger (MANDATORY)
-When trigger conditions are met, the corresponding Agent **must** be used:
-- 20+ lines modified → `spot-check` required
-- Error/build failure → `bug-hunter` required
-- Before PR/commit → `cleanup-checker` required
-- UI code changed → `resource-checker` required
-- UseCase/Parser/VM changed → `test-checker` recommended
-
-**Exception**: May skip for trivial 1-2 line fixes (must state reason)
-
-**IMPORTANT**: Always verify Sub Agent execution even after build succeeds.
-
-### 1) Read & Search before editing
-- Before changing a file: **open/read it first**. Never modify unseen code.
-- Before creating new code: **grep/search** for similar implementations and reuse patterns.
-
-### 2) Minimal change
-- Touch only what's required for the request.
-- No drive-by refactors, renames, formatting-only changes, or unrelated cleanup.
-
-### 3) Clean Architecture boundaries (strict)
-- **Domain**: pure Kotlin, **no Android/framework deps**.
-- **Data**: implements Domain repositories, depends on Domain only.
-- **Presentation**: Compose UI + ViewModel only. No business logic beyond UI orchestration.
-
-### 4) Compose + Material 3 (strict)
-- Use `MaterialTheme.colorScheme`, `typography`, `shapes`.
-- No hardcoded colors. Avoid hardcoded sizes; prefer theme/dimens when repeated.
-- UI text: resources (`strings.xml`). (Exception: internal debug-only strings.)
-
-### 5) MVI contract (strict)
-- `UiState`: immutable `data class`
-- `UiEvent`: `sealed class/interface`
-- `UiEffect`: one-shot via `Channel` + `receiveAsFlow()`
-- State: private mutable, public read-only `StateFlow`.
-
----
-
-## Task Tracking (TASKS.md)
-
-**IMPORTANT**: Always check and update `TASKS.md` before starting any task. Write TASKS.md content in Korean.
-
-- **Before starting**: Read TASKS.md to understand current progress
-- **During work**: Add current task to "In Progress" section
-- **After completion**: Move to "Completed" section with checkmark
-
----
-
-## MCP Server Usage Guide
-
-This project leverages the following MCP servers to support efficient development:
-
-### Context7 (Code Context Search)
-**Purpose**: Search for up-to-date documentation, architecture patterns, and existing implementations in the project
-
-**When to use**:
-- Before implementing new features, to explore similar patterns
-- To verify how architecture layers interact with each other
-- To understand the complete implementation flow of a specific feature
-- To check naming conventions and code style
-
-**Usage example**: `"Search for existing ViewModel MVI pattern implementations"`
-
-### Sequential Thinking (Structured Problem Solving)
-**Purpose**: Decompose complex tasks into logical steps for systematic approach
-
-**When to use**:
-- When implementing complex features spanning multiple architecture layers
-- When analyzing dependencies between multiple modules/layers
-- When analyzing impact scope for performance optimization, refactoring, etc.
-- When requirements are ambiguous or multi-step decision-making is needed
-
-**Usage example**: `"Add new QR scan feature: step-by-step analysis from Domain → Data → Presentation"`
-
-**Integrated workflow**:
-1. Use **Sequential Thinking** to decompose problems and establish a plan
-2. Use **Context7** to search for existing patterns/implementations
-3. **Step-by-Step implementation** (refer to Required workflow below)
-
-**IMPORTANT**: If you did not use or skipped MCP tools, you must explicitly explain the reason.
-- e.g., "Simple single-file modification, Sequential Thinking unnecessary"
-- e.g., "Completely new pattern, designing directly instead of Context7 search"
-- e.g., "Already read the file and understood the pattern"
-
-**Example workflow**: "Add filtering feature to winning number history screen"
-1. Sequential Thinking → Plan layers (Domain: FilterCriteria, Data: Repo param, Presentation: UI State)
-2. Context7 → Search patterns ("BottomSheet filter UI", "UiState immutable update")
-3. Implement → Domain → Data → Presentation, verify at each step
-
-### Exa (Web Search / Research)
-**Purpose**: Collect up-to-date external information to support implementation and troubleshooting
-
-**When to use**:
-- Before coding, to identify expected pitfalls and common failure modes
-- To verify external API usage, breaking changes, or release notes
-- To find real-world solutions for errors or stack traces
-- To compare patterns and best practices across sources
-
-**Notes**:
-- Use Exa to draft a pre-flight troubleshooting checklist
-- Always validate findings against local versions and the current codebase
-
-### GitHub MCP (Issue/PR/Repo)
-**Purpose**: Automate GitHub issue/PR/repository work and keep an audit trail
-
-**Account**: `Enso-Soft`
-
-**Repository** `lotto-assist`
-
-**When to use**:
-- Read issues/PRs and inspect details (e.g., body/comments/status)
-- Create/update issues and add comments
-- Check PR status/reviews and list changed files
-- Automate simple file updates, branch creation, or PR creation
-
-**Usage example**:
-- "Read issue #123 under the Enso-Soft account"
-- "Create a bug report issue and add labels"
-- "List changed files in PR #45 and leave review comments"
-
-### Codex CLI MCP (AI Code Analysis)
-**Purpose**: Project structure analysis, code review, improvement suggestions
-
-**Tools**: `codex` (analysis), `review` (code review), `ping`, `help`
-
-**⚠️ CRITICAL: Debate-based usage required**
-
-Do NOT accept Codex analysis as-is. Must conduct **Claude ↔ Codex debate**.
-
-**Required 3-round process**:
-1. **Round 1**: Codex initial analysis → receive suggestions
-2. **Round 2**: Claude challenges → "Verified in code?", "Over-engineering?", "Fits current scale?"
-3. **Round 3**: Final consensus → prioritize (P0-P4), filter out impractical items
-
-**Key questions to ask**:
-- "Did you verify this in actual code?"
-- "Is this necessary for current project scale?"
-- "Does build/test actually fail?"
-
-**Prohibited**:
-- ❌ Documenting Codex results without debate
-- ❌ Accepting all suggestions without challenge
-- ❌ Skipping code verification
-
-**Output**: Document debate results in `IMPROVE.md`
-
----
-
-## Sub Agents (Auto-Trigger)
-
-Project-defined Sub Agents must be used **automatically** when trigger conditions are met.
-
-### Agent List
-
-| Agent | Trigger Condition | Description |
-|-------|-------------------|-------------|
-| `spot-check` | New file created or 20+ lines modified | Code quality review (Claude↔Codex debate) |
-| `bug-hunter` | Error logs/stacktraces, build/test failures | Bug root cause analysis |
-| `cleanup-checker` | Before PR creation or commit | Detect unnecessary code/files |
-| `resource-checker` | Composable created/modified, UI code changes | Detect hardcoded resources |
-| `test-checker` | UseCase/Parser/Mapper/Repository/ViewModel changes | Test coverage check |
-| `ux-android-design-expert` | UI improvement request, new screen design | Toss-style UX design |
-
-### Decision Tree (Situation → Agent)
-
-```
-Code work completed?
-├─ New file / 20+ lines modified → spot-check
-├─ UI code changed → resource-checker
-└─ UseCase/Parser/VM changed → test-checker
-
-Error occurred?
-└─ Build/test failure, runtime crash → bug-hunter
-
-Preparing PR/commit?
-└─ cleanup-checker
-
-UI improvement requested?
-└─ ux-android-design-expert (+ web search mandatory)
+```mermaid
+flowchart TD
+    Start([Task Start]) --> P[Step 0: planner]
+    P --> UI{UI involved?}
+    UI -->|Yes| UX[Step 1: ux-engineer]
+    UI -->|No| CW
+    UX --> NewComp{New components?}
+    NewComp -->|Yes| UCB[Step 2: ui-component-builder]
+    NewComp -->|No| CW
+    UCB --> CW[Step 3: code-writer]
+    CW --> TE[Step 4: test-engineer]
+    TE --> CC[Step 5: code-critic]
+    CC --> Issues{Issues found?}
+    Issues -->|Yes| CW
+    Issues -->|No| Perf{Performance critical?}
+    Perf -->|Yes| PO[Step 6: performance-optimizer]
+    Perf -->|No| Done([Complete])
+    PO --> Done
 ```
 
-### Auto-Trigger Rules
+#### Step 0) Planning (ALWAYS)
+- **Invoke**: `planner`
+- **Gate**:
+  - Requirements clarified (ask questions if ambiguous)
+  - Task breakdown by layer (Domain/Data/Presentation)
+  - Acceptance criteria defined
+- **Next**: `ux-engineer` (if UI involved) else `code-writer`
 
-- Agents must be used **PROACTIVELY** when trigger conditions are met
-- Execute **before** user requests
-- If Agent is not used, **state the reason explicitly**
+#### Step 1) UX Spec (CONDITIONAL)
+- **Skip if**: No UI changes (backend-only, refactoring, bug fix without UI)
+- **Invoke**: `ux-engineer`
+- **Gate**:
+  - Screen spec + interaction table
+  - Composable hierarchy
+  - MVI contract draft (UiState/Event/Effect)
+- **Next**: `ui-component-builder` (if new components) else `code-writer`
 
-> 📁 Detailed definitions: `.claude/agents/*.md`
+#### Step 2) UI Components (CONDITIONAL)
+- **Skip if**: No new reusable components needed (using existing components only)
+- **Invoke**: `ui-component-builder`
+- **Gate**:
+  - Reusable components implemented
+  - Previews for light/dark + multiple sizes + fontScale
+  - State hoisting + modifier exposed
+- **Next**: `code-writer`
 
----
+#### Step 3) Implementation (ALWAYS)
+- **Invoke**: `code-writer`
+- **Gate**:
+  - Clean Architecture boundaries respected
+  - MVI ViewModel/Contract wired
+  - Required MCP/codex-cli rounds completed
+- **Next**: `test-engineer`
 
-## Project summary
-**Lotto Assist**: Lotto number management/analysis Android app.
-Stack: Kotlin, Jetpack Compose, Hilt, Coroutines/Flow, Room, Retrofit.
-Architecture: Clean Architecture + MVI. Features are micro-modules.
+#### Step 4) Tests (ALWAYS)
+- **Invoke**: `test-engineer`
+- **Gate**:
+  - Unit tests for business logic
+  - ViewModel state/effect tests
+  - UI tests where interaction exists
+- **Next**: `code-critic`
 
-## Module layout (high level)
-- `app/`: application + navigation host
-- `core/`
-    - `domain/`: models, repository interfaces, usecases
-    - `data/`: repository implementations, mappers
-    - `network/`: Retrofit APIs + DTOs
-    - `database/`: Room entities/DAOs
-    - `di/`: Hilt modules, dispatchers
-    - `util/`: shared utilities
-- `feature/`
-    - `home/`
-    - `qrscan/`
+#### Step 5) Review (ALWAYS)
+- **Invoke**: `code-critic`
+- **Gate**:
+  - No 🔴/🟠 issues remain
+  - If issues found → return to `code-writer`
 
----
+#### Step 6) Performance (CONDITIONAL but recommended)
+- **Invoke**: `performance-optimizer` when:
+  - Lazy lists, heavy recomposition risk, animations, big data, or release checklist
+- **Gate**:
+  - Stable params, keys, remember/derivedStateOf verified
+  - Optimization validated via codex-cli rounds
 
-## Required workflow for any task
+## MCP Servers
 
-### Step A) Clarify
-Ask questions when needed. Especially:
-- Sorting rules (tie-breakers), default ordering, paging behavior
-- UX details (BottomSheet contents, copy, empty/error states)
-- Data source truth (DB vs network vs cached)
+Available MCP servers for enhanced capabilities:
 
-### Step B) Explore
-- Search for existing patterns (MVI, repository, bottom sheets, list rendering)
-- Identify exact files/modules to change
-- Verify similar implementations exist and reuse them
+| Server | Purpose | Usage |
+|--------|---------|-------|
+| `context7` | Latest library documentation lookup | `resolve-library-id` → `get-library-docs` |
+| `sequential-thinking` | Step-by-step analysis for complex problems | Design, debugging, architecture decisions |
+| `exa` | Web search, code context search | When external information needed |
+| `github` | GitHub issues, PR management | Collaboration tasks |
+| `codex-cli` | Code analysis, review support | Code quality review |
 
-### Step C) Plan (must show a short plan)
-- Outline changes by layer/module
-- Mention new/changed types (State/Event/Effect, UseCase, Repo methods)
-- List risks/assumptions
-- Identify dependencies between layers
+## Common Rules
 
-### Step D) Implement incrementally
-- Implement smallest vertical slice first (domain → data → presentation only if needed).
-- Keep changes localized.
-- **After coding**: run appropriate Agents
-  - 20+ lines modified → `spot-check`
-  - UI code changed → `resource-checker`
-  - UseCase/Parser/VM changed → `test-checker`
+- **Language**: Kotlin
+- **UI**: Jetpack Compose with Material3
+- **Architecture**: Clean Architecture + MVI
+- **DI**: Hilt
+- **Async**: Coroutines + Flow
 
-### Step E) Verify (mandatory)
-Run commands and fix until green:
-- `./gradlew test`
-- `./gradlew lint` (if configured) or `./gradlew check`
-- `./gradlew assembleDebug`
-  If instrumentation is relevant:
-- `./gradlew connectedAndroidTest` (only when device/emulator is available)
-
-**On failure**: run `bug-hunter` for root cause analysis
-
-**If you cannot run commands** (CI/tooling limits): say so explicitly and provide exact commands + expected outcomes.
-
-**Before PR/commit**: run `cleanup-checker`
-
----
-
-## Issue-Based Workflow (Reusable)
-1. Read the issue body and summarize requirements + open decisions
-2. Ask clarifying questions and confirm decisions (save mode, duplicate rule, multi-round allowance, UX copy, data source, etc.)
-3. Update the issue body with final decisions and leave a comment explaining the rationale/history
-4. Confirm base branch and create a `feature/*` branch from it
-5. Explore existing patterns (MVI, repo/DAO, UI reuse) and note exact files to touch
-6. Implement minimal changes in order: Domain → Data → Presentation
-7. Move any UI text to resources; keep Material 3 and theme usage
-8. Run tests/builds; if not possible, state the exact commands to run
-9. Commit changes (confirm whether to include `AGENTS.md` updates)
-10. Push branch to origin
-11. Create PR with correct base/head and include `Closes #issue-number`
-12. Review the PR, leave review comments if needed, fix issues, re-run tests, and commit
-13. Post test results as a PR comment
-14. End the flow only when no further fixes remain and tests/builds are green
-
----
-
-## Build / Test commands
+## Build Commands
 
 ```bash
-./gradlew clean build
-./gradlew assembleDebug
+# Build the project
+./gradlew build
+
+# Build specific module
+./gradlew :feature:home:build
+
+# Run all tests
 ./gradlew test
-./gradlew :core:domain:test
-./gradlew check
-./gradlew connectedAndroidTest  # Only if device/emulator available
+
+# Run tests for a specific module
+./gradlew :feature:home:testDebugUnitTest
+
+# Clean build
+./gradlew clean build
 ```
 
-## Implementation conventions
+## Architecture
 
-### Domain
-- UseCases: VerbNounUseCase, operator fun invoke(...).
-- Keep logic single-responsibility.
-- Return Result<T> for failure propagation (preferred), or Flow<Result<T>> when streaming.
+This is an Android Kotlin project for a Korean Lotto (로또) assistance app. It follows Clean Architecture with multi-module structure.
 
-### Data
-- Map DTO/Entity → Domain inside Data.
-- Main-safe: switch dispatcher inside repository (inject dispatcher via Hilt).
-- No Android framework types in Data unless isolated to database/network modules.
+### Module Structure
 
-### Presentation (Compose)
-- Screens should be stateless; state lives in ViewModel.
-- Use collectAsStateWithLifecycle().
-- Effects collected in LaunchedEffect(Unit).
+```
+app/                    # Application entry point, depends on all feature/core modules
+build-logic/            # Convention plugins for consistent build configuration
+├── convention/         # Custom Gradle plugins: lotto.android.application, lotto.android.library,
+│                       # lotto.android.hilt, lotto.jvm.library
+core/
+├── domain/            # Pure Kotlin module (no Android deps) - business logic, models, use cases, repository interfaces
+├── data/              # Repository implementations, data sources, mappers
+├── network/           # Retrofit API, network models
+├── database/          # Room database, DAOs, entities, migrations
+├── di/                # Hilt DI modules
+├── util/              # Utilities (e.g., LottoDate for draw number calculations)
+feature/
+├── home/              # Main screen with Compose UI, MVI pattern (UiState/Event/Effect)
+├── qrscan/            # QR code scanning with CameraX + ML Kit
+```
 
-### Resources
-- User-facing strings -> strings.xml
-- Repeated sizes -> dimens.xml (optional)
-- Custom colors -> colors.xml (but prefer Material 3 theme first)
+### Key Patterns
 
---- 
+**MVI Architecture (feature modules):**
+- `*Contract.kt` defines `UiState`, `Event`, and `Effect` sealed classes
+- `*ViewModel.kt` uses `StateFlow` for state, `Channel` for one-time effects
+- Example: `LottoResultViewModel` handles events via `onEvent()` function
 
-## Lotto-specific rules
+**Repository Pattern:**
+- Interfaces in `core/domain/repository/`
+- Implementations in `core/data/repository/`
+- Data sources abstract local (Room) vs remote (Retrofit) access
 
-### Official API (dhlottery)
-- Base: https://www.dhlottery.co.kr/
-- Draw result: /common.do?method=getLottoNumber&drwNo={drawNo}
+**Dependency Injection:**
+- Hilt throughout, using `@HiltViewModel` for ViewModels
+- DI modules in `core/di/`, `core/network/di/`, `core/database/di/`, `core/data/di/`
 
-### QR parsing
-- Implemented under feature/qrscan
-- Validate: 1–45 range + no duplicates
-- Ball colors (1-10: Yellow, 11-20: Blue, 21-30: Red, 31-40: Gray, 41-45: Green) - use theme-friendly colors
+### Domain Models
 
----
+- `LottoResult`: Draw result with numbers, bonus, prize info
+- `LottoTicket`: User's ticket with multiple games, QR URL, check status
+- `LottoGame`: Single game with 6 numbers, type (AUTO/MANUAL), winning rank
 
-## Forbidden patterns
+### Tech Stack
 
-- God objects, storing Activity/Context long-term
-- Blocking main thread with IO/DB/network, GlobalScope
-- Manual singletons (use Hilt), deprecated APIs
-- Hardcoded strings/colors, duplicate code, unnecessary abstraction
+- Kotlin 2.0, Compose with Material3
+- Hilt for DI, Room for local DB, Retrofit/OkHttp for network
+- CameraX + ML Kit for QR scanning
+- Testing: JUnit, MockK, Turbine for Flow testing, Coroutines Test
 
----
+### QR Code Format
 
-## Definition of Done (must satisfy)
-- No architecture boundary violations.
-- No invented APIs/classes; everything compiles.
-- Build + unit tests green (or explicit note why cannot run locally).
-- UI follows Material 3 + resources.
-- Sorting/filtering logic has deterministic tie-breakers.
-- Edge cases handled: loading/empty/error states.
+Lotto QR codes use format: `?v=<4-digit-round><games>` where each game is `[m|q]<12-digit-numbers>` (m=manual, q=auto). Parser: `LottoQrParser.kt`
