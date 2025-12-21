@@ -57,6 +57,15 @@
     <string name="home_nav_my_numbers">내 번호</string>
     <string name="home_nav_stores">판매점</string>
 
+    <!-- 당첨 통계 위젯 -->
+    <string name="home_statistics_title">나의 당첨 통계</string>
+    <string name="home_statistics_win_rate">당첨률</string>
+    <string name="home_statistics_win_total">당첨 / 전체 게임</string>
+    <string name="home_statistics_rank_format">%d등</string>
+    <string name="home_statistics_count_format">%d개</string>
+    <string name="home_statistics_empty_title">아직 추첨된 게임이 없어요</string>
+    <string name="home_statistics_empty_subtitle">QR 스캔으로 로또를 등록해보세요</string>
+
     <!-- 직접 입력 다이얼로그 -->
     <string name="dialog_manual_input_title">번호 직접 입력</string>
     <string name="dialog_auto_select">자동 선택</string>

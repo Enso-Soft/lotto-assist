@@ -3,6 +3,7 @@ package com.enso.home
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
+import com.enso.domain.model.WinningStatistics
 
 data class LottoResultUiState(
     val isLoading: Boolean = false,
@@ -13,7 +14,8 @@ data class LottoResultUiState(
     val error: String? = null,
     val currentRound: Int = 0,
     val isBottomSheetOpen: Boolean = false,
-    val ticketSortType: TicketSortType = TicketSortType.DEFAULT
+    val ticketSortType: TicketSortType = TicketSortType.DEFAULT,
+    val winningStatistics: WinningStatistics = WinningStatistics.EMPTY
 )
 
 sealed class LottoResultEvent {

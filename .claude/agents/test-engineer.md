@@ -1,7 +1,7 @@
 ---
 name: test-engineer
 description: Use this agent when you need to write tests for the codebase. This includes unit tests for UseCases, Repositories, and ViewModels using JUnit5, MockK, and Turbine; UI tests for Composable components using Compose UI Testing; and integration tests for screen flow verification. This agent should be invoked after code-writer has completed implementation, or when existing code needs test coverage improvement.\n\nExamples:\n\n<example>\nContext: User has just completed implementing a new UseCase and needs tests.\nuser: "GetRecommendedNumbersUseCase 구현이 완료되었습니다. 테스트를 작성해주세요."\nassistant: "UseCase 구현이 완료되었네요. Test Engineer 에이전트를 사용하여 단위 테스트를 작성하겠습니다."\n<Task tool invocation with test-engineer agent>\n</example>\n\n<example>\nContext: Code Writer agent has just finished implementing a ViewModel.\nassistant: "LottoResultViewModel 구현이 완료되었습니다. 이제 Test Engineer 에이전트를 호출하여 ViewModel 테스트를 작성하겠습니다."\n<Task tool invocation with test-engineer agent for ViewModel testing>\n</example>\n\n<example>\nContext: User wants to verify UI component behavior.\nuser: "NumberPickerComposable의 UI 테스트를 작성해주세요."\nassistant: "Compose UI 테스트가 필요하시군요. Test Engineer 에이전트를 사용하여 UI 테스트를 작성하겠습니다."\n<Task tool invocation with test-engineer agent>\n</example>\n\n<example>\nContext: Integration testing is needed for a complete feature flow.\nuser: "로또 번호 스캔부터 결과 확인까지의 통합 테스트가 필요합니다."\nassistant: "화면 흐름 전체를 검증하는 통합 테스트를 작성하겠습니다. Test Engineer 에이전트를 호출합니다."\n<Task tool invocation with test-engineer agent>\n</example>
-model: opus
+model: sonnet
 color: yellow
 ---
 

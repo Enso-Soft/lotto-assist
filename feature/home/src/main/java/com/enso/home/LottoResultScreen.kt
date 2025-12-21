@@ -85,6 +85,7 @@ import com.enso.home.ui.components.MediumLottoBall
 import com.enso.home.ui.components.SmallLottoBall
 import com.enso.home.ui.components.TinyLottoBall
 import com.enso.home.ui.components.WinningBadge
+import com.enso.home.ui.components.WinningStatisticsWidget
 import com.enso.home.ui.theme.BackgroundLight
 import com.enso.home.ui.theme.CardLight
 import com.enso.home.ui.theme.Primary
@@ -241,6 +242,12 @@ fun LottoResultScreen(
                     ActionButtonsSection(
                         onQrScanClick = { viewModel.onEvent(LottoResultEvent.OpenQrScan) },
                         onManualInputClick = { viewModel.onEvent(LottoResultEvent.OpenManualInput) }
+                    )
+
+                    // 나의 당첨 통계 위젯
+                    WinningStatisticsWidget(
+                        statistics = uiState.winningStatistics,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     // 내 로또 섹션

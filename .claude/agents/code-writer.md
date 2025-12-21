@@ -1,7 +1,7 @@
 ---
 name: code-writer
 description: Use this agent when you need to implement feature code across Domain, Data, or Presentation layers in the Clean Architecture structure. This includes writing UseCases, Repository implementations, ViewModels, UI components, data sources, mappers, and any business logic. Invoke this agent after planning is complete (from planner agent) and UI/UX design is ready (from ui-ux-engineer agent).\n\nExamples:\n\n<example>\nContext: User needs to implement a new UseCase for lottery number recommendation.\nuser: "GetRecommendedNumbersUseCase 구현해줘"\nassistant: "UseCase 구현을 위해 code-writer 에이전트를 사용하겠습니다."\n<Task tool invocation with code-writer agent>\n</example>\n\n<example>\nContext: User needs to implement a repository for lottery results.\nuser: "LottoResultRepository 구현체 작성해줘"\nassistant: "Repository 구현을 위해 code-writer 에이전트를 호출하겠습니다."\n<Task tool invocation with code-writer agent>\n</example>\n\n<example>\nContext: After planner agent completes task breakdown.\nassistant: "계획이 완료되었습니다. 이제 code-writer 에이전트를 사용하여 첫 번째 구현 작업을 시작하겠습니다."\n<Task tool invocation with code-writer agent>\n</example>\n\n<example>\nContext: User asks to add a new feature to the presentation layer.\nuser: "로또 결과 화면에 당첨 확률 표시 기능 추가해줘"\nassistant: "Presentation 레이어 기능 구현을 위해 code-writer 에이전트를 사용하겠습니다."\n<Task tool invocation with code-writer agent>\n</example>
-model: opus
+model: sonnet
 color: green
 ---
 

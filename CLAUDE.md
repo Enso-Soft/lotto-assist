@@ -8,6 +8,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Tool Optimization**: Evaluate results before proceeding to next steps
 - **Parallel Processing**: Run independent tasks concurrently
 - **Verification**: Always verify critical operations
+- **Context Management**: Use TASKS.md for long-horizon tasks (auto-compact handles context limits)
+
+## TASKS.md - Context Persistence System
+
+TASKS.md is a "working scratchpad" file that maintains task state across context compaction (compact).
+
+### Core Principles
+
+1. **New Task Start**: Create a fresh TASKS.md when starting a completely new task
+2. **After Step Completion**: Update TASKS.md after each agent step (auto-compact will trigger when needed)
+3. **Post-Compact Recovery**: Read TASKS.md after compact to restore context
+
+### TASKS.md Structure
+
+```markdown
+# Current Task: [Task Title]
+
+## Overview
+- **Request**: [Original request summary]
+- **Started**: [Start time]
+- **Current Step**: [Current step number and name]
+
+## Progress
+
+### ✅ Completed Steps
+- [x] Step 0: planner - [Completion summary]
+- [x] Step 1: ux-engineer - [Completion summary]
+
+### 🔄 Current Step
+- [ ] Step 2: ui-component-builder
+  - Status: in_progress
+  - Working on: [Current work description]
+  - Blockers: [Record if any]
+
+### ⏳ Pending Steps
+- [ ] Step 3: code-writer
+- [ ] Step 4: test-engineer
+- [ ] Step 5: code-critic
+
+## Plan (Full - DO NOT summarize)
+[Complete plan from planner agent - this is the source of truth]
+
+## Key Artifacts
+- **UX Spec**: [UX-engineer result summary]
+- **Components**: [List of created components]
+- **Files Modified**: [List of modified files]
+
+## Context for Next Step
+[Critical information needed for the next step]
+
+## Notes
+[Issues discovered, decisions made, TODOs, etc.]
+```
+
+### Usage Rules
+
+| Situation | Action |
+|-----------|--------|
+| Starting a completely new task | Create new TASKS.md (overwrite existing) |
+| Starting an agent step | Read TASKS.md to understand context |
+| Completing an agent step | Update TASKS.md (auto-compact triggers when context is full) |
+| Resuming after compact | Read TASKS.md to check progress |
+| Task fully complete | Mark complete in TASKS.md, create fresh on next task |
 
 ## Sub-Agent System
 
@@ -29,78 +92,125 @@ This project uses specialized sub-agents defined in `.claude/agents/`. Use the T
 
 ```mermaid
 flowchart TD
-    Start([Task Start]) --> P[Step 0: planner]
-    P --> UI{UI involved?}
+    Start([Task Start]) --> Init[Create TASKS.md]
+    Init --> P[Step 0: planner]
+    P --> P_Update[Save full plan to TASKS.md]
+    P_Update --> UI{UI involved?}
     UI -->|Yes| UX[Step 1: ux-engineer]
     UI -->|No| CW
-    UX --> NewComp{New components?}
+    UX --> UX_Update[Update TASKS.md]
+    UX_Update --> NewComp{New components?}
     NewComp -->|Yes| UCB[Step 2: ui-component-builder]
     NewComp -->|No| CW
-    UCB --> CW[Step 3: code-writer]
-    CW --> TE[Step 4: test-engineer]
-    TE --> CC[Step 5: code-critic]
-    CC --> Issues{Issues found?}
+    UCB --> UCB_Update[Update TASKS.md]
+    UCB_Update --> CW[Step 3: code-writer]
+    CW --> CW_Update[Update TASKS.md]
+    CW_Update --> TE[Step 4: test-engineer]
+    TE --> TE_Update[Update TASKS.md]
+    TE_Update --> CC[Step 5: code-critic]
+    CC --> CC_Update[Update TASKS.md]
+    CC_Update --> Issues{Issues found?}
     Issues -->|Yes| CW
     Issues -->|No| Perf{Performance critical?}
     Perf -->|Yes| PO[Step 6: performance-optimizer]
     Perf -->|No| Done([Complete])
-    PO --> Done
+    PO --> PO_Update[Update TASKS.md]
+    PO_Update --> Done
 ```
 
-#### Step 0) Planning (ALWAYS)
+### Compact Strategy
+
+Auto-compact triggers automatically when context window is full. Manual `/compact` is optional.
+
+| Phase | Steps | TASKS.md Action |
+|-------|-------|-----------------|
+| **Phase 1: Planning** | planner | Save full plan to TASKS.md |
+| **Phase 2: UI Design** | ux-engineer → ui-component-builder | Update TASKS.md with specs |
+| **Phase 3: Implementation** | code-writer | Update TASKS.md with file list |
+| **Phase 4: Quality** | test-engineer → code-critic | Update TASKS.md with results |
+| **Phase 5: Optimization** | performance-optimizer | Mark task complete |
+
+> **Note**: User can run `/compact` manually anytime if they want to free up context.
+
+### Workflow Step Protocol
+
+Each agent step follows this protocol:
+
+```
+1. [Step Start] Read TASKS.md → Restore context
+2. [Execute] Run the agent
+3. [Step Complete] Update TASKS.md (completion info, created files, next step context)
+4. [Continue] Proceed to next step (auto-compact handles context limits)
+```
+
+#### Step 0) Planning (ALWAYS) - Phase 1
+- **Before**: Create new TASKS.md if new task, read existing if continuing
 - **Invoke**: `planner`
 - **Gate**:
   - Requirements clarified (ask questions if ambiguous)
   - Task breakdown by layer (Domain/Data/Presentation)
   - Acceptance criteria defined
+- **After**: Save **full plan** to TASKS.md (DO NOT summarize - plan is the source of truth)
 - **Next**: `ux-engineer` (if UI involved) else `code-writer`
 
-#### Step 1) UX Spec (CONDITIONAL)
+#### Step 1) UX Spec (CONDITIONAL) - Phase 2 Start
 - **Skip if**: No UI changes (backend-only, refactoring, bug fix without UI)
+- **Before**: Read TASKS.md to restore planning context
 - **Invoke**: `ux-engineer`
 - **Gate**:
   - Screen spec + interaction table
   - Composable hierarchy
   - MVI contract draft (UiState/Event/Effect)
+- **After**: Update TASKS.md (UX spec, component list)
 - **Next**: `ui-component-builder` (if new components) else `code-writer`
 
-#### Step 2) UI Components (CONDITIONAL)
+#### Step 2) UI Components (CONDITIONAL) - Phase 2 End
 - **Skip if**: No new reusable components needed (using existing components only)
+- **Before**: Read TASKS.md to restore UX spec context
 - **Invoke**: `ui-component-builder`
 - **Gate**:
   - Reusable components implemented
   - Previews for light/dark + multiple sizes + fontScale
   - State hoisting + modifier exposed
+- **After**: Update TASKS.md (list of created component files)
 - **Next**: `code-writer`
 
-#### Step 3) Implementation (ALWAYS)
+#### Step 3) Implementation (ALWAYS) - Phase 3
+- **Before**: Read TASKS.md to understand previous step artifacts
 - **Invoke**: `code-writer`
 - **Gate**:
   - Clean Architecture boundaries respected
   - MVI ViewModel/Contract wired
   - Required MCP/codex-cli rounds completed
+- **After**: Update TASKS.md (implemented files, key changes)
 - **Next**: `test-engineer`
 
-#### Step 4) Tests (ALWAYS)
+#### Step 4) Tests (ALWAYS) - Phase 4 Start
+- **Before**: Read TASKS.md to understand implemented code
 - **Invoke**: `test-engineer`
 - **Gate**:
   - Unit tests for business logic
   - ViewModel state/effect tests
   - UI tests where interaction exists
+- **After**: Update TASKS.md (test files, coverage)
 - **Next**: `code-critic`
 
-#### Step 5) Review (ALWAYS)
+#### Step 5) Review (ALWAYS) - Phase 4 End
+- **Before**: Read TASKS.md to identify files for review
 - **Invoke**: `code-critic`
 - **Gate**:
   - No 🔴/🟠 issues remain
   - If issues found → return to `code-writer`
+- **After**: Update TASKS.md (review results, issue list)
 
-#### Step 6) Performance (CONDITIONAL but recommended)
+#### Step 6) Performance (CONDITIONAL) - Phase 5
+- **Before**: Read TASKS.md to identify optimization targets
 - **Invoke**: `performance-optimizer` when:
   - Lazy lists, heavy recomposition risk, animations, big data, or release checklist
 - **Gate**:
   - Stable params, keys, remember/derivedStateOf verified
   - Optimization validated via codex-cli rounds
+- **After**: Update TASKS.md (optimization results) → Mark task complete
 
 ## MCP Servers
 

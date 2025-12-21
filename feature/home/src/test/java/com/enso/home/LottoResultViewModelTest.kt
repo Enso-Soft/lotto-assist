@@ -4,12 +4,14 @@ import app.cash.turbine.test
 import com.enso.domain.model.FirstPrizeInfo
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.SyncResult
+import com.enso.domain.model.WinningStatistics
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
 import com.enso.domain.usecase.GetLocalLottoResultCountUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
 import com.enso.domain.usecase.GetLottoTicketsUseCase
+import com.enso.domain.usecase.GetWinningStatisticsUseCase
 import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.domain.usecase.SyncLottoResultsUseCase
 import io.mockk.coEvery
@@ -44,6 +46,7 @@ class LottoResultViewModelTest {
     private lateinit var deleteLottoTicketUseCase: DeleteLottoTicketUseCase
     private lateinit var checkTicketWinningUseCase: CheckTicketWinningUseCase
     private lateinit var getLocalLottoResultCountUseCase: GetLocalLottoResultCountUseCase
+    private lateinit var getWinningStatisticsUseCase: GetWinningStatisticsUseCase
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -70,8 +73,10 @@ class LottoResultViewModelTest {
         deleteLottoTicketUseCase = mockk()
         checkTicketWinningUseCase = mockk()
         getLocalLottoResultCountUseCase = mockk()
+        getWinningStatisticsUseCase = mockk()
 
         coEvery { getAllLottoResultsUseCase() } returns flowOf(emptyList())
+        coEvery { getWinningStatisticsUseCase() } returns flowOf(WinningStatistics.EMPTY)
         coEvery { getLottoTicketsUseCase(any()) } returns flowOf(emptyList())
         coEvery { syncLottoResultsUseCase(any()) } returns Result.success(
             SyncResult(successCount = 0, failedCount = 0, totalCount = 0)
@@ -207,7 +212,8 @@ class LottoResultViewModelTest {
             saveLottoTicketUseCase = saveLottoTicketUseCase,
             deleteLottoTicketUseCase = deleteLottoTicketUseCase,
             checkTicketWinningUseCase = checkTicketWinningUseCase,
-            getLocalLottoResultCountUseCase = getLocalLottoResultCountUseCase
+            getLocalLottoResultCountUseCase = getLocalLottoResultCountUseCase,
+            getWinningStatisticsUseCase = getWinningStatisticsUseCase
         )
     }
 }

@@ -7,12 +7,14 @@ import com.enso.domain.model.LottoGame
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
+import com.enso.domain.model.WinningStatistics
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
 import com.enso.domain.usecase.GetLocalLottoResultCountUseCase
 import com.enso.domain.usecase.GetLottoResultUseCase
 import com.enso.domain.usecase.GetLottoTicketsUseCase
+import com.enso.domain.usecase.GetWinningStatisticsUseCase
 import com.enso.domain.usecase.SaveLottoTicketUseCase
 import com.enso.domain.usecase.SyncLottoResultsUseCase
 import com.enso.util.lotto_date.LottoDate
@@ -21,6 +23,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -37,7 +40,8 @@ class LottoResultViewModel @Inject constructor(
     private val saveLottoTicketUseCase: SaveLottoTicketUseCase,
     private val deleteLottoTicketUseCase: DeleteLottoTicketUseCase,
     private val checkTicketWinningUseCase: CheckTicketWinningUseCase,
-    private val getLocalLottoResultCountUseCase: GetLocalLottoResultCountUseCase
+    private val getLocalLottoResultCountUseCase: GetLocalLottoResultCountUseCase,
+    private val getWinningStatisticsUseCase: GetWinningStatisticsUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LottoResultUiState())
@@ -49,6 +53,7 @@ class LottoResultViewModel @Inject constructor(
     init {
         observeAllResults()
         observeUserTickets()
+        observeWinningStatistics()
         checkAndLoadInitialData()
     }
 
@@ -90,6 +95,21 @@ class LottoResultViewModel @Inject constructor(
                 }
                 .collect { tickets ->
                     _state.update { it.copy(tickets = tickets) }
+                }
+        }
+    }
+
+    private fun observeWinningStatistics() {
+        viewModelScope.launch {
+            getWinningStatisticsUseCase()
+                .catch { e ->
+                    val errorMessage = "통계 로드 실패: ${e.message}"
+                    _state.update { it.copy(error = errorMessage) }
+                    _effect.send(LottoResultEffect.ShowError(errorMessage))
+                    emit(WinningStatistics.EMPTY)
+                }
+                .collect { statistics ->
+                    _state.update { it.copy(winningStatistics = statistics) }
                 }
         }
     }

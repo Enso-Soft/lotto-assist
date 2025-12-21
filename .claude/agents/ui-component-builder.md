@@ -1,7 +1,7 @@
 ---
 name: ui-component-builder
 description: Use this agent when you need to create reusable Jetpack Compose UI components. This includes designing atomic UI elements (buttons, cards, input fields), composite components (list items, headers, dialogs), or screen-level layouts. Invoke this agent after UI/UX Engineer has defined the design specifications, or when refactoring existing components for better reusability. Examples:\n\n<example>\nContext: User needs a new reusable button component for the lotto app.\nuser: "로또 번호 선택 버튼 컴포넌트 만들어줘"\nassistant: "로또 번호 선택 버튼 컴포넌트를 만들기 위해 component-builder 에이전트를 사용하겠습니다."\n<Task tool invocation with component-builder agent>\n</example>\n\n<example>\nContext: After UI/UX Engineer completes design spec, component implementation is needed.\nuser: "UI/UX 설계가 완료됐어. 이제 컴포넌트 구현해줘"\nassistant: "설계된 UI 스펙을 바탕으로 Compose 컴포넌트를 구현하기 위해 component-builder 에이전트를 호출하겠습니다."\n<Task tool invocation with component-builder agent>\n</example>\n\n<example>\nContext: User wants to refactor an existing component for better responsiveness.\nuser: "LottoNumberBall 컴포넌트가 화면 크기에 따라 깨지는 문제가 있어"\nassistant: "반응형 처리와 레이아웃 안정성을 개선하기 위해 component-builder 에이전트를 사용하겠습니다."\n<Task tool invocation with component-builder agent>\n</example>
-model: opus
+model: sonnet
 color: orange
 ---
 
