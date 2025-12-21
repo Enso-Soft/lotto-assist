@@ -1,7 +1,18 @@
 # CLAUDE.md
-Guidance for Claude Code (claude.ai/code) in this repository.
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **Language**: Always respond in Korean (한국어) unless explicitly asked otherwise.
+
+---
+
+## Task Tracking (TASKS.md)
+
+**IMPORTANT**: Always check and update `TASKS.md` before starting any task. Write TASKS.md content in Korean.
+
+- **Before starting**: Read TASKS.md to understand current progress
+- **During work**: Add current task to "In Progress" section
+- **After completion**: Move to "Completed" section with checkmark
 
 ---
 
@@ -77,6 +88,32 @@ This project leverages the following MCP servers to support efficient developmen
 - "Create a bug report issue and add labels"
 - "List changed files in PR #45 and leave review comments"
 
+### Codex CLI MCP (AI Code Analysis)
+**Purpose**: Project structure analysis, code review, improvement suggestions
+
+**Tools**: `codex` (analysis), `review` (code review), `ping`, `help`
+
+**⚠️ CRITICAL: Debate-based usage required**
+
+Do NOT accept Codex analysis as-is. Must conduct **Claude ↔ Codex debate**.
+
+**Required 3-round process**:
+1. **Round 1**: Codex initial analysis → receive suggestions
+2. **Round 2**: Claude challenges → "Verified in code?", "Over-engineering?", "Fits current scale?"
+3. **Round 3**: Final consensus → prioritize (P0-P4), filter out impractical items
+
+**Key questions to ask**:
+- "Did you verify this in actual code?"
+- "Is this necessary for current project scale?"
+- "Does build/test actually fail?"
+
+**Prohibited**:
+- ❌ Documenting Codex results without debate
+- ❌ Accepting all suggestions without challenge
+- ❌ Skipping code verification
+
+**Output**: Document debate results in `IMPROVE.md`
+
 ---
 
 ## Non-negotiable rules (CRITICAL)
@@ -88,6 +125,15 @@ This project leverages the following MCP servers to support efficient developmen
 ### 0-1) MCP usage declaration (REQUIRED)
 - You must state whether you utilized **Context7** or **Sequential Thinking** MCP during the task.
 - If you did not use MCP, you **must explain the reason** (e.g., "Simple 1-line fix, MCP unnecessary").
+
+### 0-2) MCP usage enforcement (NO SKIP FOR NON-TRIVIAL TASKS)
+- **Default: run Sequential Thinking for every task**. Only skip when it is a truly trivial 1–2 line fix; if you skip, state the reason explicitly in the response.
+- If the task changes UI behavior, interaction patterns, or spans multiple steps, **you must run Sequential Thinking first** and show a short plan before editing.
+- If you believe MCP is unnecessary, **ask for explicit confirmation** before proceeding and record the reason in the response.
+
+### 0-3) Context7 required for API usage changes
+- When introducing or changing framework/library APIs (e.g., Compose modifiers, animations, paging/snap), **run Context7 first** to confirm the latest recommended APIs and deprecations.
+- If Context7 is not used, **stop and ask for explicit approval** to proceed without it.
 
 ### 1) Read & Search before editing
 - Before changing a file: **open/read it first**. Never modify unseen code.

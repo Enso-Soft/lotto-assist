@@ -16,3 +16,4 @@ local.properties
 # Claude Code local settings
 .claude/settings.local.json
 .claude/plans/
+TASKS.md
