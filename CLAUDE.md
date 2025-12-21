@@ -20,6 +20,61 @@ TASKS.md is a "working scratchpad" file that maintains task state across context
 2. **After Step Completion**: Update TASKS.md after each agent step (auto-compact will trigger when needed)
 3. **Post-Compact Recovery**: Read TASKS.md after compact to restore context
 
+### 🚨 Session Resume Protocol (CRITICAL)
+
+**Every time a conversation starts or resumes (especially after compact), you MUST:**
+
+```
+1. READ TASKS.md FIRST → Check task status
+2. IDENTIFY current workflow step → Look at "🔄 Current Step" section
+3. DECIDE next action based on status:
+   - Status: COMPLETE → Ask user for new task
+   - Status: in_progress → Resume that agent step
+   - Status: pending steps exist → Start next pending step with appropriate agent
+4. INVOKE the appropriate agent → Don't ask, just continue working
+```
+
+**Decision Tree for Session Resume:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Read TASKS.md                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────────┐
+              │  Is there a Current Step (🔄)?    │
+              └───────────────────────────────────┘
+                    │                    │
+                   Yes                   No
+                    │                    │
+                    ▼                    ▼
+        ┌─────────────────┐    ┌─────────────────────┐
+        │ Resume that     │    │ Check Pending (⏳)  │
+        │ agent step      │    │ steps exist?        │
+        └─────────────────┘    └─────────────────────┘
+                                      │         │
+                                     Yes        No
+                                      │         │
+                                      ▼         ▼
+                            ┌──────────────┐  ┌──────────────┐
+                            │ Start next   │  │ Task COMPLETE│
+                            │ pending step │  │ Ask user for │
+                            │ with agent   │  │ new task     │
+                            └──────────────┘  └──────────────┘
+```
+
+**Example Resume Scenarios:**
+
+| TASKS.md State | Action |
+|----------------|--------|
+| `🔄 Current Step: code-writer (in_progress)` | Invoke `code-writer` agent to continue implementation |
+| `🔄 Current Step: test-engineer (in_progress)` | Invoke `test-engineer` agent to continue testing |
+| `✅ Step 3 done, ⏳ Step 4: test-engineer pending` | Invoke `test-engineer` agent to start testing |
+| `Status: ✅ COMPLETE` | Inform user task is done, ask for next task |
+
+**⚠️ NEVER skip reading TASKS.md when resuming. This is the source of truth for task state.**
+
 ### TASKS.md Structure
 
 ```markdown
@@ -28,7 +83,13 @@ TASKS.md is a "working scratchpad" file that maintains task state across context
 ## Overview
 - **Request**: [Original request summary]
 - **Started**: [Start time]
-- **Current Step**: [Current step number and name]
+- **Status**: 🔄 IN_PROGRESS | ✅ COMPLETE
+
+## 🎯 Resume Point (READ THIS ON SESSION START)
+- **Current Step**: Step N: [agent-name]
+- **Step Status**: in_progress | pending
+- **Next Agent to Invoke**: `[agent-name]`
+- **Resume Context**: [What the agent needs to continue from where it left off]
 
 ## Progress
 
@@ -66,10 +127,11 @@ TASKS.md is a "working scratchpad" file that maintains task state across context
 
 | Situation | Action |
 |-----------|--------|
+| **🔴 Session start/resume** | **ALWAYS read TASKS.md FIRST, then invoke appropriate agent based on current step** |
 | Starting a completely new task | Create new TASKS.md (overwrite existing) |
 | Starting an agent step | Read TASKS.md to understand context |
 | Completing an agent step | Update TASKS.md (auto-compact triggers when context is full) |
-| Resuming after compact | Read TASKS.md to check progress |
+| Resuming after compact | Read TASKS.md to check progress, invoke pending agent |
 | Task fully complete | Mark complete in TASKS.md, create fresh on next task |
 
 ## Sub-Agent System
