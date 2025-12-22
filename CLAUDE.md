@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-> **Version**: 3.0.0
+> **Version**: 3.1.0
 > **Updated**: 2025-12-23
 > **Platform**: Android (Kotlin)
-> **Changes**: Universal agent system, platform profiles, improved workflows
+> **Changes**: Workflow enforcement rules, self-check protocol added
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -38,6 +38,70 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Parallel Processing**: Run independent tasks concurrently
 - **Verification**: Always verify critical operations
 - **Context Management**: Use TASKS.md for long-horizon tasks
+
+### Agent Delegation Rules (MUST)
+
+| Task Type | Delegate To | Direct MCP Usage |
+|-----------|-------------|------------------|
+| GitHub Issues/PR | `github-master` | ❌ Forbidden |
+| Code Implementation | `code-writer` | - |
+| Code Review | `code-critic` | - |
+| Bug Analysis | `investigator` | - |
+
+**IMPORTANT**: When an agent exists for a task domain, the main agent MUST NOT call MCP tools directly. Always delegate through the appropriate agent.
+
+### Workflow Enforcement Rules (CRITICAL)
+
+#### Never Skip Rule
+All implementation tasks MUST follow this sequence:
+
+```
+1. Receive implementation request
+2. [REQUIRED] Call task-router → Classify workflow
+3. [REQUIRED] Execute agents in sequence per classified workflow
+4. [FORBIDDEN] Skip agents (except those marked optional)
+5. [FORBIDDEN] Direct code modification (only code-writer agent can modify code)
+```
+
+#### Self-Check Protocol (Required Before Every Task)
+
+Before starting any implementation task, answer these questions:
+
+| # | Question | Action if No |
+|---|----------|--------------|
+| 1 | Is this an implementation task? | If not implementation, direct handling OK |
+| 2 | Has task-router been called? | Call task-router first |
+| 3 | Am I following the correct workflow? | Re-verify workflow |
+| 4 | Am I about to skip an agent? | Never skip, follow sequence |
+
+#### Quick-Fix vs Feature Classification Criteria
+
+| Condition | quick-fix | feature |
+|-----------|-----------|---------|
+| Files to modify | ≤2 | 3+ |
+| UI changes | ❌ None | ✅ Yes |
+| API/DB changes | ❌ None | ✅ Yes |
+| New dependencies | ❌ None | ✅ Yes |
+| Layers affected | Single | Multi |
+
+**If ANY feature condition is met → Use feature workflow**
+
+#### User Response Interpretation Rules
+
+| User Response | Meaning | Skip Workflow? |
+|---------------|---------|----------------|
+| "Yes", "Do it", "OK" | Approval to proceed | ❌ No |
+| "Do it quickly" | Speed request | ❌ No |
+| "Skip the workflow" | Explicit skip request | ⚠️ Warn and confirm |
+
+#### Violation Recovery Procedure
+
+```
+1. Stop direct modification immediately
+2. Re-classify task with task-router
+3. Restart with correct workflow
+4. Consider reverting previous direct changes
+```
 
 ## 2. Success Metrics
 
@@ -130,8 +194,10 @@ User Request → task-router → Workflow Selection → Agent Execution
 | **investigate** | investigator → (route based on findings) → [github-master] | Unknown bug cause |
 | **hotfix** | code-writer → test-engineer(smoke) → code-critic → [github-master] | Production emergency |
 | **github-driven** | github-master(analyze) → task-router → [workflow] → github-master(output) | GitHub issue/PR based work |
+| **github-only** | github-master | GitHub issue/PR creation, analysis, management (standalone) |
 
 > **Note**: `[github-master]` is optional - activated when `--github` flag is used or GitHub reference detected.
+> **Note**: `github-only` is used for standalone GitHub operations such as issue creation/analysis.
 
 ### 5.3 Auto-Upgrade Rules
 

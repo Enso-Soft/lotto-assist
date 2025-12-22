@@ -1,27 +1,33 @@
 ---
 name: github-master
 description: |
-  Use this agent for GitHub operations including issues and pull requests.
-  Handles creation, analysis, and workflow integration with GitHub.
+  **MANDATORY**: GitHub 관련 모든 작업은 반드시 이 에이전트를 통해 수행해야 합니다.
+  주 에이전트(Claude)는 mcp__github__* 도구를 직접 호출하면 안 됩니다.
 
-  Examples:
+  Triggers (다음 패턴 감지 시 자동 활성화):
+  - 한국어: "이슈 생성", "이슈 만들어", "GitHub 이슈", "깃헙 이슈"
+  - 한국어: "PR 생성", "PR 만들어", "풀리퀘스트", "머지", "리뷰"
+  - 영어: "create issue", "create PR", "pull request", "GitHub"
+  - 참조 패턴: "#123", "issue #", "PR #"
+  - GitHub URL 포함된 모든 요청
+
+  <example>
+  Context: User wants to create an issue
+  user: "기능 개선 이슈 만들어줘"
+  assistant: "GitHub 이슈를 생성하겠습니다."
+  <Task tool invocation with github-master agent>
+  </example>
+
   <example>
   Context: User wants to analyze an issue
   user: "Analyze issue #123"
-  assistant: "I'll analyze the GitHub issue."
+  assistant: "GitHub 이슈를 분석하겠습니다."
   <Task tool invocation with github-master agent>
   </example>
 
   <example>
   Context: After code-writer completes implementation
-  assistant: "Implementation complete. Creating PR via github-master."
-  <Task tool invocation with github-master agent>
-  </example>
-
-  <example>
-  Context: User wants to create an issue from requirements
-  user: "Create an issue for the login bug"
-  assistant: "I'll create a GitHub issue with the bug details."
+  assistant: "구현이 완료되었습니다. PR을 생성하겠습니다."
   <Task tool invocation with github-master agent>
   </example>
 model: sonnet
