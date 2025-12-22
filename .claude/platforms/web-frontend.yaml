@@ -1,0 +1,158 @@
+# Web Frontend Platform Profile
+# Version: 1.0.0
+# Description: Configuration for Web Frontend projects (React/Vue/Angular)
+
+name: Web Frontend
+version: 1.0.0
+language: TypeScript
+
+# Architecture Configuration
+architecture:
+  pattern: Feature-Sliced Design
+  alternatives:
+    - Atomic Design: "For component-focused projects"
+    - Module Federation: "For micro-frontend architecture"
+  layers:
+    - app: "Application setup, providers, global styles"
+    - pages: "Route components, page-level layouts"
+    - widgets: "Composite UI blocks combining features"
+    - features: "User interactions, business features"
+    - entities: "Business entities, domain models"
+    - shared: "Reusable utilities, UI kit, API client"
+
+  module_structure:
+    - src/app: "Application entry, routing, providers"
+    - src/pages: "Page components"
+    - src/widgets: "Complex UI compositions"
+    - src/features: "Feature modules"
+    - src/entities: "Domain entities"
+    - src/shared: "Shared utilities and components"
+
+# Framework Options
+frameworks:
+  react:
+    version: "18+"
+    meta_framework: "Next.js / Vite"
+    state_management:
+      - Zustand: "Simple global state"
+      - TanStack Query: "Server state"
+      - Jotai: "Atomic state"
+      - Redux Toolkit: "Complex state"
+  vue:
+    version: "3+"
+    meta_framework: "Nuxt 3"
+    state_management:
+      - Pinia: "Official store"
+      - VueQuery: "Server state"
+  angular:
+    version: "17+"
+    state_management:
+      - NgRx: "Redux pattern"
+      - Signals: "Built-in reactivity"
+
+# UI Framework
+ui_framework:
+  styling:
+    - Tailwind CSS: "Utility-first"
+    - CSS Modules: "Scoped styles"
+    - styled-components: "CSS-in-JS"
+  component_libraries:
+    - shadcn/ui: "Headless + Tailwind"
+    - Radix UI: "Headless primitives"
+    - Material UI: "Material Design"
+
+# Async Patterns
+async_pattern:
+  data_fetching: TanStack Query / SWR
+  api_client: Axios / fetch
+  patterns:
+    - "React Query for server state"
+    - "Custom hooks for data fetching"
+    - "Suspense for loading states"
+    - "Error boundaries for error handling"
+
+# Testing Configuration
+testing:
+  unit:
+    framework: Vitest / Jest
+    mocking: MSW (Mock Service Worker)
+    component: React Testing Library / Vue Testing Library
+  e2e:
+    framework: Playwright / Cypress
+  coverage_target: 80%
+
+# Build Configuration
+build:
+  tool: pnpm / npm / yarn
+  bundler: Vite / Webpack / Turbopack
+  commands:
+    dev: "pnpm dev"
+    build: "pnpm build"
+    test: "pnpm test"
+    test_e2e: "pnpm test:e2e"
+    lint: "pnpm lint"
+    format: "pnpm format"
+    typecheck: "pnpm typecheck"
+
+# Code Quality
+code_quality:
+  linter: ESLint
+  formatter: Prettier
+  type_checker: TypeScript strict mode
+  pre_commit: Husky + lint-staged
+
+# Constraints
+constraints:
+  node_version: "18+"
+  typescript_strict: true
+  es_target: "ES2022+"
+
+# Code Patterns
+forbidden_patterns:
+  - "any type (use unknown or proper types)"
+  - "Non-null assertions (!) without justification"
+  - "Direct DOM manipulation in React/Vue"
+  - "Prop drilling beyond 2 levels"
+  - "Business logic in components"
+  - "Inline styles for complex styling"
+  - "console.log in production code"
+
+preferred_patterns:
+  - "Custom hooks for reusable logic"
+  - "Composition over inheritance"
+  - "Colocation of related code"
+  - "Server components where applicable"
+  - "Optimistic updates for better UX"
+  - "Suspense boundaries for loading"
+  - "Type inference where possible"
+  - "Barrel exports for clean imports"
+
+# Naming Conventions
+naming:
+  component: "PascalCase (e.g., UserProfile.tsx)"
+  hook: "use{Name} (e.g., useAuth.ts)"
+  utility: "camelCase (e.g., formatDate.ts)"
+  constant: "SCREAMING_SNAKE_CASE"
+  type: "PascalCase with suffix (e.g., UserDTO, UserState)"
+  file: "kebab-case or PascalCase for components"
+
+# Documentation
+documentation:
+  style: "JSDoc / TSDoc"
+  storybook: "For component documentation"
+  required_for:
+    - "Public APIs"
+    - "Complex hooks"
+    - "Utility functions"
+
+# Performance
+performance:
+  metrics:
+    - "Core Web Vitals (LCP, FID, CLS)"
+    - "Bundle size monitoring"
+    - "Lighthouse scores"
+  patterns:
+    - "Code splitting"
+    - "Lazy loading"
+    - "Image optimization"
+    - "Memoization (useMemo, useCallback)"
