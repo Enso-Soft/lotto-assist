@@ -26,11 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.domain.model.TicketSortType
 import com.enso.home.R
-import com.enso.home.ui.theme.CardLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,12 +37,13 @@ fun SortSelectionBottomSheet(
     onSelectSortType: (TicketSortType) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = CardLight
+        containerColor = lottoColors.cardLight
     ) {
         Column(
             modifier = Modifier
@@ -55,7 +54,7 @@ fun SortSelectionBottomSheet(
                 stringResource(R.string.home_sort_criteria),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextMainLight,
+                color = lottoColors.textMainLight,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -64,9 +63,9 @@ fun SortSelectionBottomSheet(
                     onClick = { onSelectSortType(sortType) },
                     colors = CardDefaults.cardColors(
                         containerColor = if (sortType == currentSortType) {
-                            Primary.copy(alpha = 0.1f)
+                            lottoColors.primary.copy(alpha = 0.1f)
                         } else {
-                            CardLight
+                            lottoColors.cardLight
                         }
                     ),
                     shape = RoundedCornerShape(12.dp),
@@ -83,13 +82,13 @@ fun SortSelectionBottomSheet(
                             sortType.displayName,
                             fontWeight = if (sortType == currentSortType) FontWeight.Bold else FontWeight.Normal,
                             fontSize = 16.sp,
-                            color = if (sortType == currentSortType) Primary else TextMainLight
+                            color = if (sortType == currentSortType) lottoColors.primary else lottoColors.textMainLight
                         )
                         if (sortType == currentSortType) {
                             Icon(
                                 Icons.Default.Check,
                                 contentDescription = stringResource(R.string.home_selected),
-                                tint = Primary,
+                                tint = lottoColors.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }

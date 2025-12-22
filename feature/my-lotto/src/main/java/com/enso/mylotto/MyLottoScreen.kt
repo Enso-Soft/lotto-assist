@@ -37,19 +37,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.home.ui.components.SortButton
 import com.enso.home.ui.components.SortSelectionBottomSheet
 import com.enso.home.ui.components.TicketCard
-import com.enso.home.ui.theme.BackgroundLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainLight
-import com.enso.home.ui.theme.TextSubLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyLottoScreen(
     viewModel: MyLottoViewModel = hiltViewModel()
 ) {
+    val lottoColors = LocalLottoColors.current
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSortBottomSheet by remember { mutableStateOf(false) }
@@ -82,13 +80,13 @@ fun MyLottoScreen(
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundLight,
-                    titleContentColor = TextMainLight
+                    containerColor = lottoColors.backgroundLight,
+                    titleContentColor = lottoColors.textMainLight
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = BackgroundLight
+        containerColor = lottoColors.backgroundLight
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
@@ -103,7 +101,7 @@ fun MyLottoScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Primary)
+                    CircularProgressIndicator(color = lottoColors.primary)
                 }
             } else if (uiState.tickets.isEmpty()) {
                 EmptyState()
@@ -141,6 +139,8 @@ private fun MyLottoContent(
     onDeleteTicket: (Long) -> Unit,
     onCheckWinning: (Long) -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -158,7 +158,7 @@ private fun MyLottoContent(
                     stringResource(R.string.my_lotto_registered_tickets, uiState.tickets.size),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextMainLight
+                    color = lottoColors.textMainLight
                 )
             }
         }
@@ -194,6 +194,8 @@ private fun MyLottoContent(
 
 @Composable
 private fun EmptyState() {
+    val lottoColors = LocalLottoColors.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -211,7 +213,7 @@ private fun EmptyState() {
             Text(
                 stringResource(R.string.my_lotto_empty_message),
                 textAlign = TextAlign.Center,
-                color = TextSubLight,
+                color = lottoColors.textSubLight,
                 fontSize = 14.sp
             )
         }

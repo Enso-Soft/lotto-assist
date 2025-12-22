@@ -37,10 +37,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.enso.home.R
 import androidx.compose.ui.unit.sp
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.getLottoBallColor
+import com.enso.designsystem.theme.LocalLottoColors
+import com.enso.designsystem.theme.getLottoBallColor
+import com.enso.home.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -49,6 +49,7 @@ fun ManualInputDialog(
     onDismiss: () -> Unit,
     onConfirm: (round: Int, numbers: List<Int>, isAuto: Boolean) -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
     val selectedNumbers = remember { mutableStateListOf<Int>() }
     var isAuto by remember { mutableStateOf(false) }
     var round by remember { mutableStateOf(currentRound) }
@@ -154,7 +155,7 @@ fun ManualInputDialog(
                 },
                 enabled = selectedNumbers.size == 6,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Primary
+                    containerColor = lottoColors.primary
                 )
             ) {
                 Text(stringResource(R.string.dialog_save))
@@ -174,8 +175,9 @@ private fun NumberBall(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
     val backgroundColor = if (isSelected) {
-        getLottoBallColor(number)
+        getLottoBallColor(number, lottoColors)
     } else {
         Color.LightGray.copy(alpha = 0.3f)
     }

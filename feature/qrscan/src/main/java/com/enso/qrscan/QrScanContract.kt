@@ -75,6 +75,7 @@ sealed class QrScanEvent {
     data object StartScan : QrScanEvent()
     data object StopScan : QrScanEvent()
     data object ResetAfterSuccess : QrScanEvent()
+    data object ResetScreen : QrScanEvent()  // 화면 진입 시 완전 초기화
     data object ToggleFlash : QrScanEvent()
     data class ProcessQrCode(val content: String, val bounds: QrCodeBounds) : QrScanEvent()
     data class UpdateDetectedBounds(val bounds: QrCodeBounds?) : QrScanEvent()

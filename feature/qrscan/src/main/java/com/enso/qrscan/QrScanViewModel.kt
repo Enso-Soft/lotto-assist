@@ -69,6 +69,20 @@ class QrScanViewModel @Inject constructor(
             is QrScanEvent.SaveScannedTicket -> saveScannedTicket(event.qrUrl, event.forceOverwrite)
             is QrScanEvent.ConfirmDuplicateSave -> confirmDuplicateSave()
             is QrScanEvent.CancelDuplicateSave -> cancelDuplicateSave()
+            is QrScanEvent.ResetScreen -> resetScreen()
+        }
+    }
+
+    private fun resetScreen() {
+        // QR 화면에 진입할 때마다 상태를 완전히 초기화
+        lastProcessedQrUrl = null
+        isProcessingQr = false
+        _detectedBoundsRaw.value = null
+        _state.update {
+            QrScanUiState(
+                currentRound = LottoDate.getCurrentDrawNumber(),
+                isScanning = true
+            )
         }
     }
 

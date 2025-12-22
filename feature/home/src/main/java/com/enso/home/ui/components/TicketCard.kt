@@ -31,13 +31,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.home.R
-import com.enso.home.ui.theme.CardLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainLight
-import com.enso.home.ui.theme.TextSubLight
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,6 +48,7 @@ fun TicketCard(
     onCheckWinning: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
     val isDrawComplete = ticket.round <= currentRound
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -64,7 +62,7 @@ fun TicketCard(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(),
-        colors = CardDefaults.cardColors(containerColor = CardLight),
+        colors = CardDefaults.cardColors(containerColor = lottoColors.cardLight),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -87,13 +85,13 @@ fun TicketCard(
                         stringResource(R.string.home_round_prefix_format, ticket.round),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = TextMainLight
+                        color = lottoColors.textMainLight
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         stringResource(R.string.home_registered_format, formatDrawDate(ticket.registeredDate)),
                         fontSize = 11.sp,
-                        color = TextSubLight
+                        color = lottoColors.textSubLight
                     )
                 }
                 IconButton(
@@ -103,7 +101,7 @@ fun TicketCard(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.home_delete),
-                        tint = TextSubLight,
+                        tint = lottoColors.textSubLight,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -115,7 +113,7 @@ fun TicketCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            color = Primary.copy(alpha = 0.05f),
+                            color = lottoColors.primary.copy(alpha = 0.05f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(vertical = 12.dp, horizontal = 8.dp),
@@ -138,7 +136,7 @@ fun TicketCard(
                             text = "+",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextSubLight,
+                            color = lottoColors.textSubLight,
                             modifier = Modifier.padding(horizontal = 3.dp)
                         )
 
@@ -151,7 +149,7 @@ fun TicketCard(
                         text = formatPrizeAmount(lottoResult.firstPrize.winAmount),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Primary
+                        color = lottoColors.primary
                     )
                 }
             }
@@ -170,7 +168,7 @@ fun TicketCard(
                         game.gameLabel,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = Primary,
+                        color = lottoColors.primary,
                         modifier = Modifier.width(16.dp)
                     )
 
@@ -188,7 +186,7 @@ fun TicketCard(
                         Text(
                             game.gameType.displayName,
                             fontSize = 12.sp,
-                            color = TextSubLight
+                            color = lottoColors.textSubLight
                         )
                     }
 

@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:util"))
     implementation(project(":core:di"))
+    implementation(project(":core:design-system"))
     implementation(project(":feature:home"))
 
     implementation(libs.androidx.core.ktx)
