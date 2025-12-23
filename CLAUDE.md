@@ -1,34 +1,11 @@
 # CLAUDE.md
 
-> **Version**: 3.1.0
-> **Updated**: 2025-12-23
+> **Version**: 4.0.1
+> **Updated**: 2025-12-24
 > **Platform**: Android (Kotlin)
-> **Changes**: Workflow enforcement rules, self-check protocol added
+> **Changes**: Serena MCP 사용 가이드 추가
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Quick Reference
-
-```
-.claude/
-├── CLAUDE-UNIVERSAL.md      # Full universal specification
-├── platforms/
-│   ├── android.yaml         # ← This project uses this
-│   ├── ios.yaml
-│   ├── web-frontend.yaml
-│   └── web-backend.yaml
-└── agents/                  # 10 universal agents
-    ├── task-router.md       # Entry point - classifies tasks
-    ├── planner.md           # Requirements & planning
-    ├── ux-engineer.md       # UX design
-    ├── ui-builder.md        # UI components
-    ├── code-writer.md       # Implementation
-    ├── test-engineer.md     # Testing
-    ├── code-critic.md       # Code review
-    ├── investigator.md      # Bug analysis
-    ├── performance-optimizer.md
-    └── github-master.md     # GitHub issues/PR management
-```
 
 ## 1. Core AI Instructions
 
@@ -50,86 +27,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: When an agent exists for a task domain, the main agent MUST NOT call MCP tools directly. Always delegate through the appropriate agent.
 
-### Workflow Enforcement Rules (CRITICAL)
+## 2. Skills System
 
-#### Never Skip Rule
-All implementation tasks MUST follow this sequence:
+워크플로우, 코딩 패턴, 테스트 가이드, 컨벤션은 Skills로 관리됩니다.
+키워드 기반 자동 트리거로 필요한 지식이 주입됩니다.
 
-```
-1. Receive implementation request
-2. [REQUIRED] Call task-router → Classify workflow
-3. [REQUIRED] Execute agents in sequence per classified workflow
-4. [FORBIDDEN] Skip agents (except those marked optional)
-5. [FORBIDDEN] Direct code modification (only code-writer agent can modify code)
-```
-
-#### Self-Check Protocol (Required Before Every Task)
-
-Before starting any implementation task, answer these questions:
-
-| # | Question | Action if No |
-|---|----------|--------------|
-| 1 | Is this an implementation task? | If not implementation, direct handling OK |
-| 2 | Has task-router been called? | Call task-router first |
-| 3 | Am I following the correct workflow? | Re-verify workflow |
-| 4 | Am I about to skip an agent? | Never skip, follow sequence |
-
-#### Quick-Fix vs Feature Classification Criteria
-
-| Condition | quick-fix | feature |
-|-----------|-----------|---------|
-| Files to modify | ≤2 | 3+ |
-| UI changes | ❌ None | ✅ Yes |
-| API/DB changes | ❌ None | ✅ Yes |
-| New dependencies | ❌ None | ✅ Yes |
-| Layers affected | Single | Multi |
-
-**If ANY feature condition is met → Use feature workflow**
-
-#### User Response Interpretation Rules
-
-| User Response | Meaning | Skip Workflow? |
-|---------------|---------|----------------|
-| "Yes", "Do it", "OK" | Approval to proceed | ❌ No |
-| "Do it quickly" | Speed request | ❌ No |
-| "Skip the workflow" | Explicit skip request | ⚠️ Warn and confirm |
-
-#### Violation Recovery Procedure
+| Skill | 트리거 키워드 | 내용 |
+|-------|--------------|------|
+| `android-workflow` | 구현, 버그, 리팩토링, 분석, 긴급 | 워크플로우 오케스트레이션 |
+| `android-patterns` | MVI, 아키텍처, 컴포즈, 코루틴 | 코딩 패턴 가이드 |
+| `android-testing` | 테스트, TDD, 커버리지, 목 | 테스트 템플릿 |
+| `android-conventions` | 네이밍, 컨벤션, 스타일 | 코딩 규칙 |
 
 ```
-1. Stop direct modification immediately
-2. Re-classify task with task-router
-3. Restart with correct workflow
-4. Consider reverting previous direct changes
+.claude/skills/
+├── android-workflow/     # 워크플로우 (feature, quick-fix, refactor, investigate, hotfix)
+├── android-patterns/     # MVI, Clean Architecture, Compose, Coroutines
+├── android-testing/      # JUnit5, MockK, Turbine, Compose Test
+└── android-conventions/  # 네이밍, 금지패턴, 권장패턴
 ```
-
-## 2. Success Metrics
-
-### Efficiency Metrics
-
-| Metric | Baseline | Target | Measurement |
-|--------|----------|--------|-------------|
-| Quick-Fix avg time | 60s | 20s | task-router start → code-critic complete |
-| Feature avg time | 10min | 7min | planner start → last agent complete |
-| Rework rate | 30% | 15% | code-critic → code-writer recall ratio |
-
-### Cost Metrics
-
-| Metric | Baseline | Target | Measurement |
-|--------|----------|--------|-------------|
-| opus usage ratio | 57% (4/7) | 10% (1/10) | Per-agent model assignment |
-| MCP mandatory calls | 100% | Conditional | Task type based |
-
-### Quality Metrics
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Gate first-pass rate | 80%+ | Gate pass/fail records |
-| Build success rate | 95%+ | Post code-writer build results |
 
 ## 3. Platform Profile (Android)
-
-This project uses the **Android** platform profile. Key configuration:
 
 | Aspect | Configuration |
 |--------|---------------|
@@ -149,69 +67,9 @@ This project uses the **Android** platform profile. Key configuration:
 ./gradlew clean build                     # Clean build
 ```
 
-## 4. Agent System
+## 4. MCP Policy
 
-### 4.1 Available Agents
-
-| Agent | Model | Description |
-|-------|-------|-------------|
-| `task-router` | haiku | Task classification, workflow routing |
-| `planner` | opus | Requirements analysis, task breakdown |
-| `ux-engineer` | sonnet | UX design, screen specifications |
-| `ui-builder` | sonnet | Reusable UI component creation |
-| `code-writer` | sonnet | Feature implementation |
-| `test-engineer` | sonnet | Test writing (Unit/UI/Integration) |
-| `code-critic` | opus | Code review, quality validation |
-| `investigator` | sonnet | Bug analysis, debugging |
-| `performance-optimizer` | sonnet | Performance optimization |
-| `github-master` | sonnet | GitHub issue/PR management, workflow integration |
-
-### 4.2 Model Assignment
-
-| Model | Purpose | Agents                                                                                                  |
-|-------|---------|---------------------------------------------------------------------------------------------------------|
-| **haiku** | Fast classification | task-router                                                                                             |
-| **sonnet** | Implementation, analysis | ux-engineer, ui-builder, code-writer, test-engineer, investigator, performance-optimizer, github-master |
-| **opus** | Deep review, critical analysis | planner, code-critic                                                                                    |
-
-## 5. Workflow Templates
-
-### 5.1 Workflow Selection
-
-All tasks start with `task-router` for classification:
-
-```
-User Request → task-router → Workflow Selection → Agent Execution
-```
-
-### 5.2 Available Workflows
-
-| Classification | Workflow | Condition |
-|----------------|----------|-----------|
-| **quick-fix** | code-writer → code-critic → [github-master] | Files ≤2, single layer, no UI/API/DB |
-| **feature** | planner → [ux-engineer] → [ui-builder] → code-writer → test-engineer → code-critic → [github-master] | New feature/screen |
-| **refactor** | planner → code-writer → test-engineer → code-critic → [github-master] | Structure change |
-| **investigate** | investigator → (route based on findings) → [github-master] | Unknown bug cause |
-| **hotfix** | code-writer → test-engineer(smoke) → code-critic → [github-master] | Production emergency |
-| **github-driven** | github-master(analyze) → task-router → [workflow] → github-master(output) | GitHub issue/PR based work |
-| **github-only** | github-master | GitHub issue/PR creation, analysis, management (standalone) |
-
-> **Note**: `[github-master]` is optional - activated when `--github` flag is used or GitHub reference detected.
-> **Note**: `github-only` is used for standalone GitHub operations such as issue creation/analysis.
-
-### 5.3 Auto-Upgrade Rules
-
-| Trigger | From | To |
-|---------|------|-----|
-| UI changes detected | quick-fix | feature |
-| Files 3+ | quick-fix | feature |
-| API/DB changes | quick-fix | feature |
-| Build fails 2x | any | investigate |
-| GitHub issue/PR referenced | any | + github-master |
-
-## 6. MCP Policy
-
-### 6.1 Timeout & Retry
+### Timeout & Retry
 
 | MCP Server | Timeout | Retry | Purpose |
 |------------|---------|-------|---------|
@@ -220,19 +78,9 @@ User Request → task-router → Workflow Selection → Agent Execution
 | codex-cli | 120s | 2 | Code discussion, review |
 | exa | 30s | 1 | Web search |
 | github | 30s | 1 | Issue/PR lookup |
+| serena | 30s | 1 | Symbolic code navigation/editing |
 
-### 6.2 Conditional Usage
-
-| Workflow | sequential-thinking | context7 | codex-cli | github |
-|----------|---------------------|----------|-----------|--------|
-| quick-fix | Skip | Optional | 1 round | Optional |
-| feature | 3+ steps | Required | 2+ rounds | Optional |
-| refactor | 3+ steps | Optional | 2+ rounds | Optional |
-| investigate | 5+ steps | Optional | Optional | Optional |
-| hotfix | Skip | Optional | 1 round | Optional |
-| github-driven | 3+ steps | Optional | Optional | Required |
-
-### 6.3 Fallback Strategy
+### Fallback Strategy
 
 | MCP Server | Fallback Action |
 |------------|-----------------|
@@ -240,109 +88,9 @@ User Request → task-router → Workflow Selection → Agent Execution
 | context7 | Skip with warning |
 | codex-cli | Single round only |
 | exa/github | Skip (optional MCP) |
+| serena | Native file/edit tools |
 
-### 6.4 Display Format
-
-- [Sequential] Step N: {analysis content}
-- [Context7] {library}: {lookup purpose}
-- [Codex] Round N: {discussion summary}
-- [Fallback] {MCP}: {fallback action}
-
-## 7. SuperClaude Integration
-
-### 7.1 Flag → MCP Mapping
-
-| Flag | Behavior |
-|------|----------|
-| `--think` | sequential-thinking 3+ steps |
-| `--think-hard` | sequential-thinking 5+ steps |
-| `--ultrathink` | sequential-thinking 8+ steps + branching |
-| `--c7` | Enable context7 |
-| `--validate` | Force build/test verification |
-| `--no-mcp` | Disable all MCP |
-| `--github` | Enable github-master in workflow |
-
-### 7.2 Default Flags per Agent
-
-| Agent | Default Flags |
-|-------|---------------|
-| task-router | (none) |
-| planner | `--think-hard`, `--c7` |
-| code-writer | `--think`, `--c7`, `--validate` |
-| code-critic | `--think-hard`, `--loop` |
-| test-engineer | `--think`, `--c7` |
-| investigator | `--ultrathink` |
-| performance-optimizer | `--think-hard`, `--validate` |
-| github-master | `--think` |
-
-### 7.3 User Override
-
-User-specified flags override defaults:
-```
-User: "Analyze this bug with --ultrathink"
-→ investigator uses --ultrathink instead of default
-```
-
-## 8. Quality Gates
-
-| Gate | Checkpoint | Criteria |
-|------|------------|----------|
-| Gate 0 | task-router | Classification complete |
-| Gate 1 | planner | Requirements clear, tasks defined |
-| Gate 2 | code-writer | Build succeeds |
-| Gate 3 | code-critic | 0 critical, ≤2 major issues |
-
-### Thresholds
-
-- Build success: Required (100%)
-- Critical issues: 0
-- Major issues: ≤2
-- Test pass rate: 80%+
-
-### Failure Recovery
-
-```
-1. Record failure (error message, environment info)
-2. Auto-retry (1x)
-3. If still fails, present options:
-   - A: Manual fix then retry
-   - B: Invoke investigator
-   - C: Abort task
-```
-
-## 9. TASKS.md System
-
-### Session Resume Protocol
-
-```
-1. READ TASKS.md → Check status
-2. IDENTIFY current step
-3. DECIDE: COMPLETE → new task | in_progress → resume | pending → start
-4. INVOKE appropriate agent
-```
-
-### Structure
-
-```markdown
-# Task: [Name]
-
-## Overview
-- **Type**: quick-fix | feature | refactor | investigate | hotfix
-- **Status**: IN_PROGRESS | COMPLETE
-- **Current Agent**: [agent-name]
-
-## Workflow
-- [x] task-router → quick-fix
-- [ ] code-writer → in progress
-
-## Files Modified
-- path/to/file.kt
-
-## Decisions
-- [Key decisions]
-```
-
-## 10. Project Architecture
+## 5. Project Architecture
 
 ### Module Structure
 
@@ -376,11 +124,11 @@ feature/
 
 ---
 
-## Universal System
+## References
 
-For full universal specification applicable to any platform, see:
-- `.claude/CLAUDE-UNIVERSAL.md` - Complete universal template
-- `.claude/platforms/*.yaml` - Platform-specific configurations
-- `.claude/agents/*.md` - Universal agent templates
-
-Each agent uses `{{PLATFORM_CONTEXT}}` placeholder which gets replaced with platform-specific content from the appropriate YAML profile.
+| Resource | Location |
+|----------|----------|
+| Universal Specification | `.claude/CLAUDE-UNIVERSAL.md` |
+| Platform Profiles | `.claude/platforms/*.yaml` |
+| Agent Templates | `.claude/agents/*.md` |
+| Skills | `.claude/skills/` |
