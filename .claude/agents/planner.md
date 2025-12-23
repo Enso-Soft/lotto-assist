@@ -18,7 +18,7 @@ description: |
   assistant: "Let me create a systematic plan for the analytics architecture."
   <Task tool invocation with planner agent>
   </example>
-model: sonnet
+model: opus
 platform: all
 color: blue
 ---
@@ -33,10 +33,10 @@ You are methodical, thorough, and systematic. You think through dependencies, ri
 
 | Tool | Required | Condition | Min Steps |
 |------|----------|-----------|-----------|
-| sequential-thinking | ✅ | Always | 5+ steps |
-| context7 | ✅ | Technical research | - |
-| codex-cli | ⭕ | Design discussions | 1+ round |
-| exa | ⭕ | External research | - |
+| sequential-thinking | ✅(Must)  | Always | 5+ steps |
+| context7 | ✅(Must)  | Technical research | - |
+| codex-cli | ⭕        | Design discussions | 1+ round |
+| exa | ⭕        | External research | - |
 
 **Before using any MCP**: Load via `MCPSearch` with `select:<tool_name>`
 

@@ -156,7 +156,7 @@ This project uses the **Android** platform profile. Key configuration:
 | Agent | Model | Description |
 |-------|-------|-------------|
 | `task-router` | haiku | Task classification, workflow routing |
-| `planner` | sonnet | Requirements analysis, task breakdown |
+| `planner` | opus | Requirements analysis, task breakdown |
 | `ux-engineer` | sonnet | UX design, screen specifications |
 | `ui-builder` | sonnet | Reusable UI component creation |
 | `code-writer` | sonnet | Feature implementation |
@@ -168,11 +168,11 @@ This project uses the **Android** platform profile. Key configuration:
 
 ### 4.2 Model Assignment
 
-| Model | Purpose | Agents |
-|-------|---------|--------|
-| **haiku** | Fast classification | task-router |
-| **sonnet** | Implementation, analysis | planner, ux-engineer, ui-builder, code-writer, test-engineer, investigator, performance-optimizer, github-master |
-| **opus** | Deep review, critical analysis | code-critic |
+| Model | Purpose | Agents                                                                                                  |
+|-------|---------|---------------------------------------------------------------------------------------------------------|
+| **haiku** | Fast classification | task-router                                                                                             |
+| **sonnet** | Implementation, analysis | ux-engineer, ui-builder, code-writer, test-engineer, investigator, performance-optimizer, github-master |
+| **opus** | Deep review, critical analysis | planner, code-critic                                                                                    |
 
 ## 5. Workflow Templates
 

@@ -49,11 +49,11 @@ If auto-detection fails, specify in TASKS.md:
 
 ### 3.2 Model Assignment
 
-| Model | Use Case | Agents |
-|-------|----------|--------|
-| **haiku** | Fast classification, simple tasks | task-router |
-| **sonnet** | General implementation, analysis | planner, code-writer, test-engineer, investigator, ux-engineer, ui-builder, performance-optimizer |
-| **opus** | Deep analysis, critical reviews | code-critic |
+| Model | Use Case | Agents                                                                                   |
+|-------|----------|------------------------------------------------------------------------------------------|
+| **haiku** | Fast classification, simple tasks | task-router                                                                              |
+| **sonnet** | General implementation, analysis | code-writer, test-engineer, investigator, ux-engineer, ui-builder, performance-optimizer |
+| **opus** | Deep analysis, critical reviews | planner, code-critic                                                                     |
 
 ---
 
