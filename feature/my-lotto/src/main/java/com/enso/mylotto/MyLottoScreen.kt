@@ -1,13 +1,14 @@
 package com.enso.mylotto
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -132,6 +133,7 @@ fun MyLottoScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MyLottoContent(
     uiState: MyLottoUiState,
@@ -142,9 +144,8 @@ private fun MyLottoContent(
     val lottoColors = LocalLottoColors.current
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 섹션 헤더
@@ -163,12 +164,19 @@ private fun MyLottoContent(
             }
         }
 
-        // 정렬 버튼
-        item {
-            SortButton(
-                currentSortType = uiState.sortType,
-                onClick = onSortClick
-            )
+        // 정렬 버튼 (Sticky Header)
+        stickyHeader(key = "sort_button") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(lottoColors.backgroundLight)
+                    .padding(bottom = 16.dp)
+            ) {
+                SortButton(
+                    currentSortType = uiState.sortType,
+                    onClick = onSortClick
+                )
+            }
         }
 
         // 티켓 목록
@@ -176,18 +184,15 @@ private fun MyLottoContent(
             items = uiState.tickets,
             key = { ticket -> ticket.ticketId }
         ) { ticket ->
-            TicketCard(
-                ticket = ticket,
-                lottoResult = uiState.lottoResults.find { it.round == ticket.round },
-                currentRound = uiState.currentRound,
-                onCheckWinning = { onCheckWinning(ticket.ticketId) },
-                onDelete = { onDeleteTicket(ticket.ticketId) }
-            )
-        }
-
-        // Bottom padding
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.animateItem()) {
+                TicketCard(
+                    ticket = ticket,
+                    lottoResult = uiState.lottoResults.find { it.round == ticket.round },
+                    currentRound = uiState.currentRound,
+                    onCheckWinning = { onCheckWinning(ticket.ticketId) },
+                    onDelete = { onDeleteTicket(ticket.ticketId) }
+                )
+            }
         }
     }
 }
