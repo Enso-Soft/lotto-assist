@@ -1,5 +1,12 @@
 package com.enso.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,11 +59,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +74,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -80,6 +91,7 @@ import com.enso.home.ui.components.LottoBall
 import com.enso.home.ui.components.ManualInputDialog
 import com.enso.home.ui.components.MediumLottoBall
 import com.enso.home.ui.components.SmallLottoBall
+import com.enso.designsystem.component.SlotMachineNumber
 import com.enso.home.ui.components.SortButton
 import com.enso.home.ui.components.SortSelectionBottomSheet
 import com.enso.home.ui.components.TicketCard
@@ -279,10 +291,15 @@ private fun WinningResultSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable(onClick = onRoundClick)
         ) {
+            val roundTextStyle = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold)
+            // 슬롯머신 스타일 회차 표시: 숫자만 롤링, "회"는 고정
+            SlotMachineNumber(
+                targetNumber = selectedResult?.round ?: 0,
+                totalDurationMs = 200
+            )
             Text(
-                text = stringResource(R.string.home_round_format, selectedResult?.round ?: 0),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.ExtraBold,
+                text = stringResource(R.string.home_round_suffix),
+                style = roundTextStyle,
                 color = lottoColors.textMainLight
             )
             Icon(
@@ -293,8 +310,7 @@ private fun WinningResultSection(
             )
             Text(
                 text = stringResource(R.string.home_winning_result),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.ExtraBold,
+                style = roundTextStyle,
                 color = lottoColors.textMainLight
             )
         }
@@ -404,11 +420,10 @@ private fun WinningNumbersCard(result: LottoResult) {
                     color = lottoColors.textSubLight
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatCurrency(result.firstPrize.winAmount),
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    color = lottoColors.primary
+                PrizeAmountRolling(
+                    amount = result.firstPrize.winAmount,
+                    textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Black),
+                    textColor = lottoColors.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -653,19 +668,55 @@ private fun RoundSelectionBottomSheet(
     }
 }
 
-private fun formatCurrency(amount: Long): String {
-    val billions = amount / 100000000
-    val millions = (amount % 100000000) / 10000
-    return if (billions > 0) {
-        "${billions}억 ${millions.toString().replace("0+$".toRegex(), "")}만원"
-    } else {
-        "${millions}만원"
-    }
-}
-
 private fun formatCurrencyShort(amount: Long): String {
     val billions = amount / 100000000
     return "${billions}억 원"
+}
+
+@Composable
+private fun PrizeAmountRolling(
+    amount: Long,
+    textStyle: TextStyle,
+    textColor: Color
+) {
+    val billions = amount / 100000000
+    val tenThousands = (amount % 100000000) / 10000
+    val tenThousandsText = tenThousands.toString().replace("0+$".toRegex(), "")
+
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (billions > 0) {
+            SlotMachineNumber(
+                targetNumber = billions.toInt(),
+                totalDurationMs = 200,
+                textStyle = textStyle,
+                textColor = textColor
+            )
+            Text(text = "억", style = textStyle, color = textColor)
+            Text(text = " ", style = textStyle, color = textColor)
+            if (tenThousandsText.isNotEmpty()) {
+                SlotMachineNumber(
+                    targetNumber = tenThousandsText.toInt(),
+                    totalDurationMs = 200,
+                    textStyle = textStyle,
+                    textColor = textColor
+                )
+            }
+            Text(text = "만원", style = textStyle, color = textColor)
+        } else {
+            if (tenThousandsText.isNotEmpty()) {
+                SlotMachineNumber(
+                    targetNumber = tenThousandsText.toInt(),
+                    totalDurationMs = 200,
+                    textStyle = textStyle,
+                    textColor = textColor
+                )
+            }
+            Text(text = "만원", style = textStyle, color = textColor)
+        }
+    }
 }
 
 private fun formatDrawDate(date: Date): String {
@@ -697,4 +748,3 @@ private fun formatPrizeAmount(amount: Long): String {
         "${amount}원"
     }
 }
-
