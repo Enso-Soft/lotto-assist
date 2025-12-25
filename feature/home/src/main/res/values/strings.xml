@@ -22,6 +22,7 @@
     <string name="home_winning_congrats">당첨 축하드려요!</string>
     <string name="home_round_format">%d회</string>
     <string name="home_round_prefix_format">제 %d회</string>
+    <string name="home_round_suffix">회</string>
     <string name="home_winning_result">당첨결과</string>
     <string name="home_select_round">회차 선택</string>
     <string name="home_bonus">보너스</string>

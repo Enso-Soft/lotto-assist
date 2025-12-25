@@ -2,6 +2,8 @@ package com.enso.mylotto
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.enso.domain.model.TicketSortType
+import com.enso.domain.repository.UserPreferencesRepository
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
@@ -28,7 +30,8 @@ class MyLottoViewModel @Inject constructor(
     private val getLottoTicketsUseCase: GetLottoTicketsUseCase,
     private val deleteLottoTicketUseCase: DeleteLottoTicketUseCase,
     private val checkTicketWinningUseCase: CheckTicketWinningUseCase,
-    private val getAllLottoResultsUseCase: GetAllLottoResultsUseCase
+    private val getAllLottoResultsUseCase: GetAllLottoResultsUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyLottoUiState())
@@ -39,6 +42,7 @@ class MyLottoViewModel @Inject constructor(
 
     init {
         initializeData()
+        loadSavedSortType()
         observeTickets()
         observeLottoResults()
     }
@@ -46,6 +50,19 @@ class MyLottoViewModel @Inject constructor(
     private fun initializeData() {
         val currentRound = LottoDate.getCurrentDrawNumber()
         _state.update { it.copy(currentRound = currentRound) }
+    }
+
+    private fun loadSavedSortType() {
+        viewModelScope.launch {
+            userPreferencesRepository.getSortType()
+                .catch { e ->
+                    // DataStore IOException 발생 시 기본값 사용
+                    emit(TicketSortType.DEFAULT)
+                }
+                .collect { savedSortType ->
+                    _state.update { it.copy(sortType = savedSortType) }
+                }
+        }
     }
 
     private fun observeTickets() {
@@ -114,7 +131,18 @@ class MyLottoViewModel @Inject constructor(
     }
 
     private fun changeSortType(sortType: com.enso.domain.model.TicketSortType) {
+        val previousSortType = _state.value.sortType
         _state.update { it.copy(sortType = sortType) }
+
+        viewModelScope.launch {
+            try {
+                userPreferencesRepository.saveSortType(sortType)
+            } catch (e: Exception) {
+                // 저장 실패 시 이전 값으로 롤백
+                _state.update { it.copy(sortType = previousSortType) }
+                _effect.send(MyLottoEffect.ShowError("정렬 설정 저장에 실패했습니다"))
+            }
+        }
     }
 
     private fun deleteTicket(ticketId: Long) {

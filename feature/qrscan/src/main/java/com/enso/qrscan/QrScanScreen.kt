@@ -25,8 +25,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -158,6 +156,11 @@ fun QrScanScreen(
     val detectedBounds by viewModel.detectedBounds.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    // 화면 진입 시 완전 초기화
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(QrScanEvent.ResetScreen)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -697,7 +700,14 @@ private fun CameraPreview(
 
     DisposableEffect(Unit) {
         onDispose {
+            // 카메라 리소스 정리 (UI 깨짐/렉 방지)
+            try {
+                cameraProviderFuture.get()?.unbindAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             executor.shutdown()
+            barcodeScanner.close()
         }
     }
 
@@ -709,6 +719,10 @@ private fun CameraPreview(
         factory = { ctx ->
             val previewView = PreviewView(ctx).apply {
                 scaleType = PreviewView.ScaleType.FILL_CENTER
+                // COMPATIBLE 모드(TextureView) 사용: Compose 애니메이션과 동기화
+                // PERFORMANCE 모드(SurfaceView)는 별도 하드웨어 레이어에서 렌더링되어
+                // slideOutVertically 같은 Compose 애니메이션이 적용되지 않음
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             }
             val preview = Preview.Builder()
                 .setResolutionSelector(
@@ -734,9 +748,9 @@ private fun CameraPreview(
                 }
 
             try {
-                cameraProviderFuture.get().let { cameraProvider ->
-                    cameraProvider.unbindAll()
-                    camera = cameraProvider.bindToLifecycle(
+                cameraProviderFuture.get().let { provider ->
+                    provider.unbindAll()
+                    camera = provider.bindToLifecycle(
                         lifecycleOwner,
                         cameraSelector,
                         preview,

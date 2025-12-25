@@ -11,21 +11,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.enso.home.ui.theme.LosingRed
-import com.enso.home.ui.theme.WinningGreen
+import com.enso.designsystem.theme.LocalLottoColors
 
 @Composable
 fun WinningBadge(
     rank: Int,
     modifier: Modifier = Modifier
 ) {
+    val lottoColors = LocalLottoColors.current
+    val winningGreen = lottoColors.success
+    val losingRed = Color(0xFFF44336) // Material Red 500
+
     val (text, backgroundColor, textColor) = when (rank) {
-        1 -> Triple("1등", WinningGreen, Color.White)
-        2 -> Triple("2등", WinningGreen, Color.White)
-        3 -> Triple("3등", WinningGreen, Color.White)
-        4 -> Triple("4등", WinningGreen.copy(alpha = 0.8f), Color.White)
-        5 -> Triple("5등", WinningGreen.copy(alpha = 0.6f), Color.White)
-        else -> Triple("낙첨", LosingRed.copy(alpha = 0.15f), LosingRed)
+        1 -> Triple("1등", winningGreen, Color.White)
+        2 -> Triple("2등", winningGreen, Color.White)
+        3 -> Triple("3등", winningGreen, Color.White)
+        4 -> Triple("4등", winningGreen.copy(alpha = 0.8f), Color.White)
+        5 -> Triple("5등", winningGreen.copy(alpha = 0.6f), Color.White)
+        else -> Triple("낙첨", losingRed.copy(alpha = 0.15f), losingRed)
     }
 
     Text(

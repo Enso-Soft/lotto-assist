@@ -3,8 +3,6 @@ package com.enso.home.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +18,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.enso.home.ui.theme.getLottoBallColor
+import com.enso.designsystem.theme.LocalLottoColors
+import com.enso.designsystem.theme.getLottoBallColor
 
 @Composable
 fun LottoBall(
@@ -29,12 +28,14 @@ fun LottoBall(
     size: Dp = 44.dp,
     fontSize: TextUnit = 18.sp
 ) {
+    val lottoColors = LocalLottoColors.current
+
     Box(
         modifier = modifier
             .size(size)
             .shadow(2.dp, CircleShape)
             .clip(CircleShape)
-            .background(getLottoBallColor(number))
+            .background(getLottoBallColor(number, lottoColors))
             .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
         contentAlignment = Alignment.Center
     ) {
@@ -94,8 +95,9 @@ fun HighlightedSmallLottoBall(
     isMatched: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val lottoColors = LocalLottoColors.current
     val backgroundColor = if (isMatched) {
-        getLottoBallColor(number)
+        getLottoBallColor(number, lottoColors)
     } else {
         Color.LightGray.copy(alpha = 0.3f)
     }

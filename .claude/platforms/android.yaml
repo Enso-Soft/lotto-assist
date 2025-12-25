@@ -1,0 +1,133 @@
+# Android Platform Profile
+# Version: 1.0.0
+# Description: Configuration for Android/Kotlin projects
+
+name: Android
+version: 1.0.0
+language: Kotlin
+
+# Architecture Configuration
+architecture:
+  pattern: Clean Architecture + MVI
+  layers:
+    - domain: "Pure Kotlin, no Android dependencies. Contains UseCases, Repository interfaces, Domain models."
+    - data: "Repository implementations, DataSources (Local/Remote), Mappers, DTOs."
+    - presentation: "ViewModels, UI State, Compose UI components."
+
+  module_structure:
+    - app: "Application entry point, DI setup"
+    - core/domain: "Business logic, pure Kotlin"
+    - core/data: "Data layer implementations"
+    - core/network: "Retrofit, API definitions"
+    - core/database: "Room, DAOs, Entities"
+    - core/di: "Hilt modules"
+    - feature/*: "Feature modules with UI"
+
+# UI Framework
+ui_framework:
+  name: Jetpack Compose
+  design_system: Material3
+  state_management: StateFlow + Channel
+  patterns:
+    - "MVI with Contract (UiState, Event, Effect)"
+    - "State hoisting for Composables"
+    - "remember/derivedStateOf for optimizations"
+
+# Dependency Injection
+di_framework:
+  name: Hilt
+  scopes:
+    - Singleton: "Application-wide singletons"
+    - ViewModelScoped: "ViewModel lifecycle"
+    - ActivityScoped: "Activity lifecycle"
+    - FragmentScoped: "Fragment lifecycle"
+
+# Async Patterns
+async_pattern:
+  primary: Kotlin Coroutines
+  reactive: Flow
+  patterns:
+    - "invoke operator for UseCases"
+    - "Result type for error handling"
+    - "StateFlow for UI state"
+    - "Channel for one-time effects"
+
+# Testing Configuration
+testing:
+  unit:
+    framework: JUnit5
+    mocking: MockK
+    flow_testing: Turbine
+    coroutines: kotlinx-coroutines-test
+  ui:
+    framework: Compose UI Testing
+    rules: createComposeRule, createAndroidComposeRule
+  integration:
+    framework: Hilt Testing
+  coverage_target: 80%
+
+# Build Configuration
+build:
+  tool: Gradle (Kotlin DSL)
+  commands:
+    build: "./gradlew build"
+    build_module: "./gradlew :{module}:build"
+    test: "./gradlew test"
+    test_module: "./gradlew :{module}:testDebugUnitTest"
+    lint: "./gradlew lint"
+    clean: "./gradlew clean"
+    assemble_debug: "./gradlew assembleDebug"
+    assemble_release: "./gradlew assembleRelease"
+
+# Constraints
+constraints:
+  minSdk: 24
+  targetSdk: 34
+  kotlin_version: "2.0.0"
+  compose_compiler: "Kotlin Plugin Integrated (2.0+)"  # No separate version needed
+
+# Code Patterns
+forbidden_patterns:
+  - "LiveData in new code (use StateFlow)"
+  - "AsyncTask (deprecated)"
+  - "findViewById (use View Binding or Compose)"
+  - "XML layouts for new screens (use Compose)"
+  - "GlobalScope (use structured concurrency)"
+  - "runBlocking in production code"
+  - "Mutable collections exposed publicly"
+
+preferred_patterns:
+  - "invoke operator for UseCases"
+  - "Result type or sealed class for error handling"
+  - "State hoisting in Compose"
+  - "Immutable data classes"
+  - "suspend functions for one-shot operations"
+  - "Flow for streams"
+  - "Modifier as first optional parameter"
+
+# Naming Conventions
+naming:
+  usecase: "{Action}{Subject}UseCase (e.g., GetLottoResultUseCase)"
+  repository: "{Subject}Repository (e.g., LottoRepository)"
+  viewmodel: "{Feature}ViewModel (e.g., HomeViewModel)"
+  contract: "{Feature}Contract with UiState, Event, Effect"
+  composable: "{Component}Screen, {Component}Content, {Component}Item"
+  module: "feature:{feature-name}, core:{core-name}"
+
+# Documentation
+documentation:
+  style: KDoc
+  required_for:
+    - "Public APIs"
+    - "Complex business logic"
+    - "Non-obvious implementations"
+
+# Korean Market Specifics (Optional)
+korea_specifics:
+  localization:
+    date_format: "YYYY년 MM월 DD일"
+    time_format: "오전/오후 HH:MM"
+    currency: "₩{amount:,}"
+  accessibility:
+    - "Korean TTS pronunciation"
+    - "Sentence length ≤ 30 characters recommended"

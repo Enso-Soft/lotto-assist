@@ -32,23 +32,9 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.domain.model.WinningStatistics
 import com.enso.home.R
-import com.enso.home.ui.theme.BackgroundDark
-import com.enso.home.ui.theme.BackgroundLight
-import com.enso.home.ui.theme.BallBlue
-import com.enso.home.ui.theme.BallGreen
-import com.enso.home.ui.theme.BallGrey
-import com.enso.home.ui.theme.BallRed
-import com.enso.home.ui.theme.BallYellow
-import com.enso.home.ui.theme.CardDark
-import com.enso.home.ui.theme.CardLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainDark
-import com.enso.home.ui.theme.TextMainLight
-import com.enso.home.ui.theme.TextSubDark
-import com.enso.home.ui.theme.TextSubLight
-import com.enso.home.ui.theme.WinningGreen
 
 /**
  * WinningStatisticsWidget - 나의 당첨 통계 위젯
@@ -64,8 +50,9 @@ fun WinningStatisticsWidget(
     statistics: WinningStatistics,
     modifier: Modifier = Modifier
 ) {
+    val lottoColors = LocalLottoColors.current
     val isDarkMode = isSystemInDarkTheme()
-    val cardColor = if (isDarkMode) CardDark else CardLight
+    val cardColor = if (isDarkMode) lottoColors.cardDark else lottoColors.cardLight
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -98,7 +85,7 @@ fun WinningStatisticsWidget(
                 HorizontalDivider(
                     modifier = Modifier.fillMaxWidth(),
                     thickness = 1.dp,
-                    color = if (isDarkMode) TextSubDark.copy(alpha = 0.2f) else TextSubLight.copy(alpha = 0.2f)
+                    color = if (isDarkMode) lottoColors.textSubDark.copy(alpha = 0.2f) else lottoColors.textSubLight.copy(alpha = 0.2f)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -123,7 +110,8 @@ fun WinningStatisticsWidget(
  */
 @Composable
 private fun StatisticsHeader(isDarkMode: Boolean) {
-    val textColor = if (isDarkMode) TextMainDark else TextMainLight
+    val lottoColors = LocalLottoColors.current
+    val textColor = if (isDarkMode) lottoColors.textMainDark else lottoColors.textMainLight
 
     Text(
         text = stringResource(R.string.home_statistics_title),
@@ -148,7 +136,8 @@ private fun MainStatsSection(
     totalCount: Int,
     isDarkMode: Boolean
 ) {
-    val subTextColor = if (isDarkMode) TextSubDark else TextSubLight
+    val lottoColors = LocalLottoColors.current
+    val subTextColor = if (isDarkMode) lottoColors.textSubDark else lottoColors.textSubLight
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -164,7 +153,7 @@ private fun MainStatsSection(
                 text = winningRate,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Primary,
+                color = lottoColors.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -196,7 +185,7 @@ private fun MainStatsSection(
                     text = "$winningCount",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = WinningGreen
+                    color = lottoColors.winningGreen
                 )
                 Text(
                     text = " / ",
@@ -208,7 +197,7 @@ private fun MainStatsSection(
                     text = "$totalCount",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isDarkMode) TextMainDark else TextMainLight
+                    color = if (isDarkMode) lottoColors.textMainDark else lottoColors.textMainLight
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -259,8 +248,9 @@ private fun RankBadge(
     count: Int,
     isDarkMode: Boolean
 ) {
-    val badgeColor = getRankBadgeColor(rank)
-    val subTextColor = if (isDarkMode) TextSubDark else TextSubLight
+    val lottoColors = LocalLottoColors.current
+    val badgeColor = getRankBadgeColor(rank, lottoColors)
+    val subTextColor = if (isDarkMode) lottoColors.textSubDark else lottoColors.textSubLight
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -299,7 +289,8 @@ private fun RankBadge(
  */
 @Composable
 private fun EmptyStatisticsContent(isDarkMode: Boolean) {
-    val subTextColor = if (isDarkMode) TextSubDark else TextSubLight
+    val lottoColors = LocalLottoColors.current
+    val subTextColor = if (isDarkMode) lottoColors.textSubDark else lottoColors.textSubLight
 
     Box(
         modifier = Modifier
@@ -331,15 +322,16 @@ private fun EmptyStatisticsContent(isDarkMode: Boolean) {
  * 등수에 따른 배지 색상 반환
  *
  * @param rank 등수 (1-5)
+ * @param lottoColors Lotto 색상 객체
  * @return 해당 등수의 배지 색상
  */
-private fun getRankBadgeColor(rank: Int): Color = when (rank) {
-    1 -> BallYellow   // 1등 - 노란색
-    2 -> BallBlue     // 2등 - 파란색
-    3 -> BallRed      // 3등 - 빨간색
-    4 -> BallGrey     // 4등 - 회색
-    5 -> BallGreen    // 5등 - 녹색
-    else -> BallGrey
+private fun getRankBadgeColor(rank: Int, lottoColors: com.enso.designsystem.theme.LottoColors): Color = when (rank) {
+    1 -> lottoColors.ballYellow   // 1등 - 노란색
+    2 -> lottoColors.ballBlue     // 2등 - 파란색
+    3 -> lottoColors.ballRed      // 3등 - 빨간색
+    4 -> lottoColors.ballGrey     // 4등 - 회색
+    5 -> lottoColors.ballGreen    // 5등 - 녹색
+    else -> lottoColors.ballGrey
 }
 
 // ============================================================================
@@ -391,9 +383,10 @@ private val highWinStatistics = WinningStatistics(
 @Preview(name = "Default - Light")
 @Composable
 private fun WinningStatisticsWidgetLightPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -408,9 +401,10 @@ private fun WinningStatisticsWidgetLightPreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetDarkPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundDark)
+            .background(lottoColors.backgroundDark)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -422,9 +416,10 @@ private fun WinningStatisticsWidgetDarkPreview() {
 @Preview(name = "Empty State - Light")
 @Composable
 private fun WinningStatisticsWidgetEmptyLightPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -439,9 +434,10 @@ private fun WinningStatisticsWidgetEmptyLightPreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetEmptyDarkPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundDark)
+            .background(lottoColors.backgroundDark)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -456,9 +452,10 @@ private fun WinningStatisticsWidgetEmptyDarkPreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetPortraitPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -475,9 +472,10 @@ private fun WinningStatisticsWidgetPortraitPreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetLandscapePreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -493,9 +491,10 @@ private fun WinningStatisticsWidgetLandscapePreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetSmallScreenPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(12.dp)
     ) {
         WinningStatisticsWidget(
@@ -510,9 +509,10 @@ private fun WinningStatisticsWidgetSmallScreenPreview() {
 )
 @Composable
 private fun WinningStatisticsWidgetLargeTextPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(
@@ -524,9 +524,10 @@ private fun WinningStatisticsWidgetLargeTextPreview() {
 @Preview(name = "High Win Rate")
 @Composable
 private fun WinningStatisticsWidgetHighWinPreview() {
+    val lottoColors = LocalLottoColors.current
     Box(
         modifier = Modifier
-            .background(BackgroundLight)
+            .background(lottoColors.backgroundLight)
             .padding(16.dp)
     ) {
         WinningStatisticsWidget(

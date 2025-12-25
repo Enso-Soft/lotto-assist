@@ -7,6 +7,7 @@ import com.enso.domain.model.LottoGame
 import com.enso.domain.model.LottoResult
 import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
+import com.enso.domain.repository.UserPreferencesRepository
 import com.enso.domain.usecase.CheckTicketWinningUseCase
 import com.enso.domain.usecase.DeleteLottoTicketUseCase
 import com.enso.domain.usecase.GetAllLottoResultsUseCase
@@ -42,6 +43,7 @@ class MyLottoViewModelTest {
     private lateinit var deleteLottoTicketUseCase: DeleteLottoTicketUseCase
     private lateinit var checkTicketWinningUseCase: CheckTicketWinningUseCase
     private lateinit var getAllLottoResultsUseCase: GetAllLottoResultsUseCase
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -113,10 +115,13 @@ class MyLottoViewModelTest {
         deleteLottoTicketUseCase = mockk()
         checkTicketWinningUseCase = mockk()
         getAllLottoResultsUseCase = mockk()
+        userPreferencesRepository = mockk()
 
         // Default mock behaviors
         every { getLottoTicketsUseCase(any()) } returns flowOf(emptyList())
         every { getAllLottoResultsUseCase() } returns flowOf(emptyList())
+        every { userPreferencesRepository.getSortType() } returns flowOf(TicketSortType.DEFAULT)
+        coEvery { userPreferencesRepository.saveSortType(any()) } returns Unit
         coEvery { deleteLottoTicketUseCase(any()) } returns Result.success(Unit)
         coEvery { checkTicketWinningUseCase(any()) } returns Result.success(Unit)
     }
@@ -246,6 +251,66 @@ class MyLottoViewModelTest {
             val effect = awaitItem()
             assertTrue(effect is MyLottoEffect.ShowSnackbar)
             assertEquals("새로고침 완료", (effect as MyLottoEffect.ShowSnackbar).message)
+        }
+    }
+
+    // ==================== SortType Persistence Tests ====================
+
+    @Test
+    fun `초기화 시 저장된 정렬 타입이 로드된다`() = runTest {
+        // Given
+        val savedSortType = TicketSortType.ROUND_DESC
+        every { userPreferencesRepository.getSortType() } returns flowOf(savedSortType)
+
+        // When
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Then
+        assertEquals(savedSortType, viewModel.state.value.sortType)
+    }
+
+    @Test
+    fun `초기화 시 DEFAULT 정렬 타입이 로드된다`() = runTest {
+        // Given
+        every { userPreferencesRepository.getSortType() } returns flowOf(TicketSortType.DEFAULT)
+
+        // When
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Then
+        assertEquals(TicketSortType.DEFAULT, viewModel.state.value.sortType)
+        assertEquals(TicketSortType.REGISTERED_DATE_DESC, viewModel.state.value.sortType)
+    }
+
+    @Test
+    fun `ChangeSortType 이벤트 시 Repository에 저장된다`() = runTest {
+        // Given
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val newSortType = TicketSortType.ROUND_ASC
+
+        // When
+        viewModel.onEvent(MyLottoEvent.ChangeSortType(newSortType))
+        advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { userPreferencesRepository.saveSortType(newSortType) }
+    }
+
+    @Test
+    fun `ChangeSortType 이벤트 시 모든 정렬 타입이 저장된다`() = runTest {
+        // Given
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // When & Then
+        TicketSortType.entries.forEach { sortType ->
+            viewModel.onEvent(MyLottoEvent.ChangeSortType(sortType))
+            advanceUntilIdle()
+            coVerify { userPreferencesRepository.saveSortType(sortType) }
         }
     }
 
@@ -526,7 +591,8 @@ class MyLottoViewModelTest {
             getLottoTicketsUseCase = getLottoTicketsUseCase,
             deleteLottoTicketUseCase = deleteLottoTicketUseCase,
             checkTicketWinningUseCase = checkTicketWinningUseCase,
-            getAllLottoResultsUseCase = getAllLottoResultsUseCase
+            getAllLottoResultsUseCase = getAllLottoResultsUseCase,
+            userPreferencesRepository = userPreferencesRepository
         )
     }
 }

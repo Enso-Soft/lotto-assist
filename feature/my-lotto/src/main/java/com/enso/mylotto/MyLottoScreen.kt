@@ -1,17 +1,18 @@
 package com.enso.mylotto
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -37,19 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.home.ui.components.SortButton
 import com.enso.home.ui.components.SortSelectionBottomSheet
 import com.enso.home.ui.components.TicketCard
-import com.enso.home.ui.theme.BackgroundLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainLight
-import com.enso.home.ui.theme.TextSubLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyLottoScreen(
     viewModel: MyLottoViewModel = hiltViewModel()
 ) {
+    val lottoColors = LocalLottoColors.current
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSortBottomSheet by remember { mutableStateOf(false) }
@@ -82,13 +81,14 @@ fun MyLottoScreen(
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundLight,
-                    titleContentColor = TextMainLight
+                    containerColor = lottoColors.backgroundLight,
+                    titleContentColor = lottoColors.textMainLight
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = BackgroundLight
+        containerColor = lottoColors.backgroundLight,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
@@ -99,12 +99,7 @@ fun MyLottoScreen(
                 .padding(paddingValues)
         ) {
             if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
+                MyLottoSkeletonContent()
             } else if (uiState.tickets.isEmpty()) {
                 EmptyState()
             } else {
@@ -134,6 +129,7 @@ fun MyLottoScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MyLottoContent(
     uiState: MyLottoUiState,
@@ -141,10 +137,11 @@ private fun MyLottoContent(
     onDeleteTicket: (Long) -> Unit,
     onCheckWinning: (Long) -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
+
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 섹션 헤더
@@ -158,17 +155,24 @@ private fun MyLottoContent(
                     stringResource(R.string.my_lotto_registered_tickets, uiState.tickets.size),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextMainLight
+                    color = lottoColors.textMainLight
                 )
             }
         }
 
-        // 정렬 버튼
-        item {
-            SortButton(
-                currentSortType = uiState.sortType,
-                onClick = onSortClick
-            )
+        // 정렬 버튼 (Sticky Header)
+        stickyHeader(key = "sort_button") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(lottoColors.backgroundLight)
+                    .padding(bottom = 16.dp)
+            ) {
+                SortButton(
+                    currentSortType = uiState.sortType,
+                    onClick = onSortClick
+                )
+            }
         }
 
         // 티켓 목록
@@ -176,24 +180,23 @@ private fun MyLottoContent(
             items = uiState.tickets,
             key = { ticket -> ticket.ticketId }
         ) { ticket ->
-            TicketCard(
-                ticket = ticket,
-                lottoResult = uiState.lottoResults.find { it.round == ticket.round },
-                currentRound = uiState.currentRound,
-                onCheckWinning = { onCheckWinning(ticket.ticketId) },
-                onDelete = { onDeleteTicket(ticket.ticketId) }
-            )
-        }
-
-        // Bottom padding
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.animateItem()) {
+                TicketCard(
+                    ticket = ticket,
+                    lottoResult = uiState.lottoResults.find { it.round == ticket.round },
+                    currentRound = uiState.currentRound,
+                    onCheckWinning = { onCheckWinning(ticket.ticketId) },
+                    onDelete = { onDeleteTicket(ticket.ticketId) }
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun EmptyState() {
+    val lottoColors = LocalLottoColors.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -211,7 +214,7 @@ private fun EmptyState() {
             Text(
                 stringResource(R.string.my_lotto_empty_message),
                 textAlign = TextAlign.Center,
-                color = TextSubLight,
+                color = lottoColors.textSubLight,
                 fontSize = 14.sp
             )
         }

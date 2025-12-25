@@ -24,21 +24,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.domain.model.TicketSortType
 import com.enso.home.R
-import com.enso.home.ui.theme.CardLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextSubLight
-import com.enso.home.ui.theme.WinningGreen
 
 @Composable
 fun AllTicketsHeader(
     totalCount: Int,
     winningCount: Int
 ) {
+    val lottoColors = LocalLottoColors.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f)),
+        colors = CardDefaults.cardColors(containerColor = lottoColors.primary.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -54,12 +53,12 @@ fun AllTicketsHeader(
                     text = "$totalCount",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Primary
+                    color = lottoColors.primary
                 )
                 Text(
                     text = stringResource(R.string.home_total_numbers),
                     fontSize = 12.sp,
-                    color = TextSubLight,
+                    color = lottoColors.textSubLight,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -68,7 +67,7 @@ fun AllTicketsHeader(
                 modifier = Modifier
                     .width(1.dp)
                     .height(50.dp)
-                    .background(TextSubLight.copy(alpha = 0.2f))
+                    .background(lottoColors.textSubLight.copy(alpha = 0.2f))
             )
 
             Column(
@@ -78,12 +77,12 @@ fun AllTicketsHeader(
                     text = "$winningCount",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = WinningGreen
+                    color = lottoColors.winningGreen
                 )
                 Text(
                     text = stringResource(R.string.home_winning_count),
                     fontSize = 12.sp,
-                    color = TextSubLight,
+                    color = lottoColors.textSubLight,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -96,10 +95,12 @@ fun SortButton(
     currentSortType: TicketSortType,
     onClick: () -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = CardLight),
+        colors = CardDefaults.cardColors(containerColor = lottoColors.cardLight),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -116,19 +117,19 @@ fun SortButton(
                 Text(
                     text = stringResource(R.string.home_sort),
                     fontSize = 14.sp,
-                    color = TextSubLight
+                    color = lottoColors.textSubLight
                 )
                 Text(
                     text = currentSortType.displayName,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Primary
+                    color = lottoColors.primary
                 )
             }
             Icon(
                 Icons.Default.ArrowDropDown,
                 contentDescription = stringResource(R.string.home_sort_select),
-                tint = TextSubLight,
+                tint = lottoColors.textSubLight,
                 modifier = Modifier.size(24.dp)
             )
         }

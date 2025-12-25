@@ -15,23 +15,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.home.R
-import com.enso.home.ui.theme.CardLight
-import com.enso.home.ui.theme.Primary
-import com.enso.home.ui.theme.TextMainLight
-import com.enso.home.ui.theme.TextSubLight
 
 /**
  * 토스 스타일 삭제 확인 다이얼로그
  * - 둥근 모서리 (24dp)
  * - 깔끔한 타이포그래피
- * - Primary 색상 강조
+ * - lottoColors.primary 색상 강조
  */
 @Composable
 fun ConfirmDeleteDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val lottoColors = LocalLottoColors.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -39,7 +38,7 @@ fun ConfirmDeleteDialog(
                 text = stringResource(R.string.dialog_delete_ticket_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextMainLight
+                color = lottoColors.textMainLight
             )
         },
         text = {
@@ -47,7 +46,7 @@ fun ConfirmDeleteDialog(
                 text = stringResource(R.string.dialog_delete_ticket_message),
                 style = MaterialTheme.typography.bodyMedium,
                 fontSize = 15.sp,
-                color = TextSubLight,
+                color = lottoColors.textSubLight,
                 modifier = Modifier.padding(top = 8.dp)
             )
         },
@@ -55,7 +54,7 @@ fun ConfirmDeleteDialog(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Primary,
+                    containerColor = lottoColors.primary,
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp)
@@ -71,8 +70,8 @@ fun ConfirmDeleteDialog(
             FilledTonalButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = TextSubLight.copy(alpha = 0.1f),
-                    contentColor = TextSubLight
+                    containerColor = lottoColors.textSubLight.copy(alpha = 0.1f),
+                    contentColor = lottoColors.textSubLight
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -83,7 +82,7 @@ fun ConfirmDeleteDialog(
             }
         },
         shape = RoundedCornerShape(24.dp),
-        containerColor = CardLight,
+        containerColor = lottoColors.cardLight,
         tonalElevation = 6.dp
     )
 }
