@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,8 +47,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -258,10 +263,7 @@ private fun WinningResultSection(
         // 회차 선택
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.scaleOnPress(
-                shape = RoundedCornerShape(12.dp),
-                onClick = onRoundClick
-            )
+            modifier = Modifier.scaleOnPress(shape = RoundedCornerShape(12.dp)) { onRoundClick.invoke() }
                 .padding(horizontal = 10.dp)
         ) {
             val roundTextStyle = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold)
@@ -462,7 +464,13 @@ private fun RoundSelectionBottomSheet(
 ) {
     val lottoColors = LocalLottoColors.current
     val listState = rememberLazyListState()
-    
+    val coroutineScope = rememberCoroutineScope()
+
+    // 첫 번째 보이는 아이템이 20개 이상 스크롤되었는지 확인
+    val showScrollToTopButton by remember {
+        derivedStateOf { listState.firstVisibleItemIndex >= 20 }
+    }
+
     // 선택된 회차의 인덱스를 찾아서 해당 위치로 스크롤
     LaunchedEffect(selectedRound) {
         selectedRound?.let { round ->
@@ -473,79 +481,109 @@ private fun RoundSelectionBottomSheet(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            stringResource(R.string.home_select_round),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = lottoColors.textPrimary,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
-        )
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.home_select_round),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = lottoColors.textPrimary,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
+            )
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.height(400.dp)
-        ) {
-            itemsIndexed(results, key = { _, result -> result.round }) { index, result ->
-                // PastDrawItem과 동일한 디자인
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            if (result.round == selectedRound) lottoColors.accentContainer
-                            else Color.Transparent
-                        )
-                        .scaleOnPress { onSelectRound(result) }
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 왼쪽: 회차 + 날짜 세로 배치
-                    Column {
-                        Text(
-                            stringResource(R.string.home_round_format, result.round),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = if (result.round == selectedRound) lottoColors.accent else lottoColors.textPrimary
-                        )
-                        Text(
-                            formatDrawDate(result.drawDate),
-                            fontSize = 12.sp,
-                            color = lottoColors.textSecondary
-                        )
-                    }
-
-                    // 오른쪽: 로또 번호 볼 6개
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.height(400.dp)
+            ) {
+                itemsIndexed(results, key = { _, result -> result.round }) { index, result ->
+                    // PastDrawItem과 동일한 디자인
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (result.round == selectedRound) lottoColors.accentContainer
+                                else Color.Transparent
+                            )
+                            .scaleOnPress(shape = RoundedCornerShape(12.dp)) { onSelectRound(result) }
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        result.numbers.forEach { number ->
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(getLottoBallColor(number, lottoColors)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = number.toString(),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                        // 왼쪽: 회차 + 날짜 세로 배치
+                        Column {
+                            Text(
+                                stringResource(R.string.home_round_format, result.round),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = if (result.round == selectedRound) lottoColors.accent else lottoColors.textPrimary
+                            )
+                            Text(
+                                formatDrawDate(result.drawDate),
+                                fontSize = 12.sp,
+                                color = lottoColors.textSecondary
+                            )
+                        }
+
+                        // 오른쪽: 로또 번호 볼 6개
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            result.numbers.forEach { number ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(getLottoBallColor(number, lottoColors)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = number.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
+                    // 마지막 아이템이 아니면 구분선
+                    if (index < results.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                            color = lottoColors.divider
+                        )
+                    }
                 }
-                // 마지막 아이템이 아니면 구분선
-                if (index < results.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        color = lottoColors.divider
-                    )
-                }
+            }
+        }
+
+        // 맨 위로 이동 플로팅 버튼
+        AnimatedVisibility(
+            visible = showScrollToTopButton,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(lottoColors.primary.copy(alpha = 0.6f))
+                    .clickable {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = "맨 위로",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }
