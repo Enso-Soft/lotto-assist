@@ -5,7 +5,7 @@ import com.enso.domain.model.LottoTicket
 import com.enso.domain.model.TicketSortType
 
 data class MyLottoUiState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val tickets: List<LottoTicket> = emptyList(),
     val lottoResults: List<LottoResult> = emptyList(),

@@ -9,6 +9,9 @@ Guidance for Claude Code (claude.ai/code) in this repository.
 
 This project leverages the following MCP servers to support efficient development:
 
+### Mobile-mcp
+- 항상 클릭하기 전 요소의 정확한 좌표를 모른다면 `mobile_list_elements_on_screen` 도구를 사용해서 정확한 좌표를 찾으세요.
+
 ### Context7 (Code Context Search)
 **Purpose**: Search for up-to-date documentation, architecture patterns, and existing implementations in the project
 
