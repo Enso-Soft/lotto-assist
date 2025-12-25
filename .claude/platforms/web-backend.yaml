@@ -1,0 +1,198 @@
+# Web Backend Platform Profile
+# Version: 1.0.0
+# Description: Configuration for Backend/Server projects
+
+name: Web Backend
+version: 1.0.0
+language: "TypeScript / Python / Go / Java / Kotlin"
+
+# Architecture Configuration
+architecture:
+  pattern: Clean Architecture / Hexagonal Architecture
+  alternatives:
+    - DDD: "Domain-Driven Design for complex domains"
+    - Microservices: "For distributed systems"
+    - Serverless: "For event-driven architectures"
+  layers:
+    - domain: "Business logic, entities, value objects, domain services"
+    - application: "Use cases, application services, DTOs"
+    - infrastructure: "Database, external APIs, messaging, caching"
+    - interface: "Controllers, routes, GraphQL resolvers"
+
+  module_structure:
+    - src/domain: "Pure business logic"
+    - src/application: "Use cases and services"
+    - src/infrastructure: "External dependencies"
+    - src/interface: "API endpoints"
+    - src/shared: "Shared utilities"
+
+# Framework Options
+frameworks:
+  node:
+    - NestJS: "Full-featured, TypeScript-first"
+    - Express: "Minimal, flexible"
+    - Fastify: "High performance"
+    - Hono: "Edge-ready, lightweight"
+  python:
+    - FastAPI: "Modern, async, type hints"
+    - Django: "Full-featured, batteries included"
+    - Flask: "Minimal, flexible"
+  go:
+    - Gin: "Fast, minimal"
+    - Echo: "High performance"
+    - Fiber: "Express-like"
+  java_kotlin:
+    - Spring Boot: "Enterprise-grade"
+    - Ktor: "Kotlin-native, async"
+    - Quarkus: "Cloud-native, fast startup"
+
+# Database Options
+database:
+  relational:
+    - PostgreSQL: "Feature-rich, ACID compliant"
+    - MySQL: "Popular, reliable"
+  nosql:
+    - MongoDB: "Document store"
+    - Redis: "Cache, session store"
+  orm:
+    - Prisma: "TypeScript ORM"
+    - SQLAlchemy: "Python ORM"
+    - GORM: "Go ORM"
+    - JPA/Hibernate: "Java ORM"
+
+# API Design
+api_design:
+  styles:
+    - REST: "Resource-based, HTTP methods"
+    - GraphQL: "Flexible queries"
+    - gRPC: "High performance, protobuf"
+  documentation:
+    - OpenAPI/Swagger: "REST API docs"
+    - GraphQL Schema: "Self-documenting"
+  versioning: "URL path (/v1/) or header based"
+
+# Async Patterns
+async_pattern:
+  node: "async/await, Promises"
+  python: "asyncio, await"
+  go: "goroutines, channels"
+  java: "CompletableFuture, reactive (Reactor/RxJava)"
+  messaging:
+    - "Message queues (RabbitMQ, SQS)"
+    - "Event streaming (Kafka)"
+    - "Pub/Sub patterns"
+
+# Testing Configuration
+testing:
+  unit:
+    framework:
+      node: "Jest / Vitest"
+      python: "pytest"
+      go: "testing package"
+      java: "JUnit 5"
+    mocking:
+      node: "jest.mock / MSW"
+      python: "pytest-mock / unittest.mock"
+      go: "gomock / testify"
+      java: "Mockito"
+  integration:
+    database: "Testcontainers"
+    api: "Supertest / httptest"
+  coverage_target: 80%
+
+# Build Configuration
+build:
+  commands:
+    node:
+      dev: "pnpm dev"
+      build: "pnpm build"
+      test: "pnpm test"
+      lint: "pnpm lint"
+    python:
+      dev: "uvicorn main:app --reload"
+      test: "pytest"
+      lint: "ruff check ."
+      format: "black ."
+    go:
+      build: "go build"
+      test: "go test ./..."
+      lint: "golangci-lint run"
+    java:
+      build: "./gradlew build"
+      test: "./gradlew test"
+
+# Security
+security:
+  authentication:
+    - JWT: "Stateless tokens"
+    - OAuth2: "Third-party auth"
+    - Session: "Server-side sessions"
+  authorization:
+    - RBAC: "Role-based access control"
+    - ABAC: "Attribute-based access control"
+  best_practices:
+    - "Input validation"
+    - "SQL injection prevention (parameterized queries)"
+    - "XSS prevention"
+    - "CORS configuration"
+    - "Rate limiting"
+    - "Secrets management (env vars, vault)"
+
+# Code Patterns
+forbidden_patterns:
+  - "SQL string concatenation (use parameterized queries)"
+  - "Hardcoded secrets"
+  - "Catching and swallowing exceptions"
+  - "Business logic in controllers"
+  - "Direct database access from controllers"
+  - "Synchronous blocking in async context"
+
+preferred_patterns:
+  - "Dependency injection"
+  - "Repository pattern for data access"
+  - "Service layer for business logic"
+  - "DTOs for API contracts"
+  - "Validation at boundaries"
+  - "Structured logging"
+  - "Health check endpoints"
+  - "Graceful shutdown"
+
+# Naming Conventions
+naming:
+  controller: "{Resource}Controller (e.g., UserController)"
+  service: "{Domain}Service (e.g., AuthService)"
+  repository: "{Entity}Repository (e.g., UserRepository)"
+  dto: "{Action}{Entity}DTO (e.g., CreateUserDTO)"
+  entity: "PascalCase (e.g., User, Order)"
+
+# Documentation
+documentation:
+  api: "OpenAPI / Swagger"
+  code: "JSDoc / docstrings / godoc"
+  required_for:
+    - "Public APIs"
+    - "Complex business logic"
+    - "Configuration options"
+
+# Observability
+observability:
+  logging:
+    format: "Structured JSON"
+    levels: "debug, info, warn, error"
+  metrics:
+    - "Request latency"
+    - "Error rates"
+    - "Resource usage"
+  tracing:
+    - "Distributed tracing (OpenTelemetry)"
+    - "Request correlation IDs"
+
+# Deployment
+deployment:
+  containerization: Docker
+  orchestration: "Kubernetes / Docker Compose"
+  ci_cd: "GitHub Actions / GitLab CI"
+  environments:
+    - development
+    - staging
+    - production

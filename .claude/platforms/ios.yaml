@@ -1,0 +1,123 @@
+# iOS Platform Profile
+# Version: 1.0.0
+# Description: Configuration for iOS/Swift projects
+
+name: iOS
+version: 1.0.0
+language: Swift
+
+# Architecture Configuration
+architecture:
+  pattern: Clean Architecture + MVVM
+  alternatives:
+    - VIPER: "For complex navigation flows"
+    - TCA: "The Composable Architecture for state management"
+  layers:
+    - domain: "Pure Swift, no UIKit/SwiftUI dependencies. Contains UseCases, Repository protocols, Domain models."
+    - data: "Repository implementations, DataSources, Mappers, DTOs."
+    - presentation: "ViewModels, Views, ViewState."
+
+  module_structure:
+    - App: "Application entry point, DI setup"
+    - Domain: "Business logic, pure Swift"
+    - Data: "Data layer implementations"
+    - Network: "URLSession/Alamofire, API definitions"
+    - Persistence: "Core Data/Realm/SwiftData"
+    - Feature/*: "Feature modules with UI"
+
+# UI Framework
+ui_framework:
+  name: SwiftUI
+  alternative: UIKit
+  design_system: "Apple Human Interface Guidelines"
+  state_management: "@Observable / ObservableObject + @Published"
+  patterns:
+    - "MVVM with ViewState"
+    - "Environment for DI"
+    - "@Binding for two-way data flow"
+    - "@State for local view state"
+
+# Dependency Injection
+di_framework:
+  name: Swift DI (manual or Swinject/Resolver)
+  patterns:
+    - "Protocol-based abstraction"
+    - "Factory pattern for complex objects"
+    - "Environment injection in SwiftUI"
+
+# Async Patterns
+async_pattern:
+  primary: Swift Concurrency (async/await)
+  reactive: Combine
+  patterns:
+    - "async throws for operations"
+    - "Result type for explicit error handling"
+    - "@Published for reactive state"
+    - "AsyncSequence for streams"
+
+# Testing Configuration
+testing:
+  unit:
+    framework: XCTest
+    mocking: "Protocol-based mocks or Mockolo"
+    async_testing: "async/await in tests"
+  ui:
+    framework: XCUITest
+    snapshot: swift-snapshot-testing
+  coverage_target: 80%
+
+# Build Configuration
+build:
+  tool: Xcode / xcodebuild
+  commands:
+    build: "xcodebuild -scheme {Scheme} -configuration Debug build"
+    test: "xcodebuild -scheme {Scheme} test"
+    clean: "xcodebuild clean"
+    archive: "xcodebuild -scheme {Scheme} archive"
+
+# Constraints
+constraints:
+  minimum_ios: "15.0"
+  swift_version: "5.9+"
+  xcode_version: "15.0+"
+
+# Code Patterns
+forbidden_patterns:
+  - "Force unwrapping (!) except in tests"
+  - "Implicitly unwrapped optionals in production"
+  - "Massive View Controllers"
+  - "Direct network calls from Views"
+  - "Global mutable state"
+  - "Completion handlers when async/await available"
+
+preferred_patterns:
+  - "Protocol-oriented programming"
+  - "Value types (struct) over reference types when appropriate"
+  - "Guard let for early exits"
+  - "Computed properties for derived state"
+  - "async/await for asynchronous code"
+  - "Combine for reactive streams"
+  - "ViewModifier for reusable view modifications"
+
+# Naming Conventions
+naming:
+  usecase: "{Action}{Subject}UseCase (e.g., FetchUserUseCase)"
+  repository: "{Subject}Repository (e.g., UserRepository)"
+  viewmodel: "{Feature}ViewModel (e.g., HomeViewModel)"
+  view: "{Feature}View (e.g., HomeView)"
+  protocol: "{Name}Protocol or {Name}able (e.g., UserServiceProtocol)"
+
+# Documentation
+documentation:
+  style: "Swift DocC / Markup comments"
+  required_for:
+    - "Public APIs"
+    - "Complex business logic"
+    - "Non-obvious implementations"
+
+# Platform Specifics
+platform_specifics:
+  app_lifecycle: "App protocol with @main"
+  deep_linking: "URL schemes, Universal Links"
+  push_notifications: "APNs, UserNotifications framework"
+  storage: "UserDefaults, Keychain, Core Data, SwiftData"
