@@ -1,305 +1,313 @@
 package com.enso.designsystem.component
 
-import android.content.res.Configuration
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonElevation
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.enso.designsystem.theme.LottoTheme
+import com.enso.designsystem.modifier.scaleOnPressEffect
+import com.enso.designsystem.theme.AppShapes
+import com.enso.designsystem.theme.LocalLottoColors
 
 /**
- * LottoButton - Primary Button
- *
- * 주요 액션을 위한 버튼 컴포넌트입니다.
- *
- * @param onClick 클릭 이벤트 핸들러
- * @param modifier 외부에서 전달받는 Modifier
- * @param enabled 버튼 활성화 상태 (기본값: true)
- * @param shape 버튼 모서리 형태
- * @param colors 버튼 색상 설정
- * @param elevation 버튼 그림자 높이
- * @param contentPadding 버튼 내부 패딩
- * @param content 버튼 내부 컨텐츠
+ * Primary Button
+ * 액센트 배경, 흰색 텍스트, 그림자 없음
  */
 @Composable
-fun LottoButton(
+fun LottoPrimaryButton(
+    text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = MaterialTheme.shapes.small,
-    colors: ButtonColors = ButtonDefaults.buttonColors(),
-    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    content: @Composable RowScope.() -> Unit,
+    icon: ImageVector? = null,
+    height: Dp = 56.dp,
 ) {
+    val lottoColors = LocalLottoColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier
+            .scaleOnPressEffect(interactionSource)
+            .height(height),
         enabled = enabled,
-        shape = shape,
-        colors = colors,
-        elevation = elevation,
-        contentPadding = contentPadding,
-        content = content
-    )
+        shape = AppShapes.Button,
+        interactionSource = interactionSource,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = lottoColors.accent,
+            contentColor = Color.White,
+            disabledContainerColor = lottoColors.accent.copy(alpha = 0.4f),
+            disabledContentColor = Color.White.copy(alpha = 0.6f)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            disabledElevation = 0.dp
+        ),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
 
 /**
- * LottoOutlinedButton - Outlined Button
- *
- * 보조 액션을 위한 테두리 버튼 컴포넌트입니다.
- *
- * @param onClick 클릭 이벤트 핸들러
- * @param modifier 외부에서 전달받는 Modifier
- * @param enabled 버튼 활성화 상태 (기본값: true)
- * @param shape 버튼 모서리 형태
- * @param colors 버튼 색상 설정
- * @param elevation 버튼 그림자 높이
- * @param contentPadding 버튼 내부 패딩
- * @param content 버튼 내부 컨텐츠
+ * Primary Button (Full Width)
  */
 @Composable
-fun LottoOutlinedButton(
+fun LottoPrimaryButtonFull(
+    text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = MaterialTheme.shapes.small,
-    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(),
-    elevation: ButtonElevation? = null,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    content: @Composable RowScope.() -> Unit,
+    icon: ImageVector? = null,
+    height: Dp = 56.dp,
 ) {
-    OutlinedButton(
+    LottoPrimaryButton(
+        text = text,
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         enabled = enabled,
-        shape = shape,
-        colors = colors,
-        elevation = elevation,
-        contentPadding = contentPadding,
-        content = content
+        icon = icon,
+        height = height
     )
 }
 
 /**
- * LottoTextButton - Text Button
- *
- * 최소 강조 액션을 위한 텍스트 버튼 컴포넌트입니다.
- *
- * @param onClick 클릭 이벤트 핸들러
- * @param modifier 외부에서 전달받는 Modifier
- * @param enabled 버튼 활성화 상태 (기본값: true)
- * @param shape 버튼 모서리 형태
- * @param colors 버튼 색상 설정
- * @param contentPadding 버튼 내부 패딩
- * @param content 버튼 내부 컨텐츠
+ * Secondary Button
+ * 흰색 배경, 회색 테두리, 검정 텍스트
+ */
+@Composable
+fun LottoSecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+    height: Dp = 56.dp,
+) {
+    val lottoColors = LocalLottoColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .scaleOnPressEffect(interactionSource)
+            .height(height),
+        enabled = enabled,
+        shape = AppShapes.Button,
+        interactionSource = interactionSource,
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = lottoColors.cardLight,
+            contentColor = lottoColors.textPrimary,
+            disabledContainerColor = lottoColors.cardLight,
+            disabledContentColor = lottoColors.textDisabled
+        ),
+        border = BorderStroke(1.dp, lottoColors.divider),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            disabledElevation = 0.dp
+        ),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = lottoColors.textPrimary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
+ * Text Button
+ * 액센트 텍스트, 배경 없음
  */
 @Composable
 fun LottoTextButton(
+    text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = MaterialTheme.shapes.small,
-    colors: ButtonColors = ButtonDefaults.textButtonColors(),
-    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
-    content: @Composable RowScope.() -> Unit,
 ) {
+    val lottoColors = LocalLottoColors.current
+
     TextButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = shape,
-        colors = colors,
-        contentPadding = contentPadding,
-        content = content
-    )
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = lottoColors.accent,
+            disabledContentColor = lottoColors.accent.copy(alpha = 0.4f)
+        )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
 }
 
 /**
- * LottoTonalButton - Filled Tonal Button
- *
- * 보조 강조 액션을 위한 Tonal 버튼 컴포넌트입니다.
- *
- * @param onClick 클릭 이벤트 핸들러
- * @param modifier 외부에서 전달받는 Modifier
- * @param enabled 버튼 활성화 상태 (기본값: true)
- * @param shape 버튼 모서리 형태
- * @param colors 버튼 색상 설정
- * @param elevation 버튼 그림자 높이
- * @param contentPadding 버튼 내부 패딩
- * @param content 버튼 내부 컨텐츠
+ * Pill Button
+ * 작은 둥근 버튼 (뱃지 스타일)
  */
 @Composable
-fun LottoTonalButton(
+fun LottoPillButton(
+    text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = MaterialTheme.shapes.small,
-    colors: ButtonColors = ButtonDefaults.filledTonalButtonColors(),
-    elevation: ButtonElevation? = ButtonDefaults.filledTonalButtonElevation(),
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    content: @Composable RowScope.() -> Unit,
+    isPrimary: Boolean = true,
 ) {
-    FilledTonalButton(
+    val lottoColors = LocalLottoColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier
+            .scaleOnPressEffect(interactionSource)
+            .height(32.dp),
         enabled = enabled,
-        shape = shape,
-        colors = colors,
-        elevation = elevation,
-        contentPadding = contentPadding,
-        content = content
-    )
-}
-
-// ========== Previews ==========
-
-@Preview(name = "Button Variants - Light", showBackground = true)
-@Preview(name = "Button Variants - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun LottoButtonVariantsPreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(16.dp)) {
-            LottoButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("Primary Button")
-            }
-
-            LottoTonalButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("Tonal Button")
-            }
-
-            LottoOutlinedButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("Outlined Button")
-            }
-
-            LottoTextButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("Text Button")
-            }
-        }
+        shape = AppShapes.Pill,
+        interactionSource = interactionSource,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isPrimary) lottoColors.accent else lottoColors.chipBackground,
+            contentColor = if (isPrimary) Color.White else lottoColors.textPrimary
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            disabledElevation = 0.dp
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
-@Preview(name = "Disabled States - Light", showBackground = true)
-@Preview(name = "Disabled States - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+/**
+ * Action Card Button
+ * 아이콘 + 텍스트 세로 배치, 카드 형태
+ */
 @Composable
-private fun LottoButtonDisabledPreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(16.dp)) {
-            LottoButton(
-                onClick = { },
-                enabled = false,
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("Disabled Primary")
-            }
+fun LottoActionCardButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: @Composable () -> Unit,
+    isPrimary: Boolean = true,
+    height: Dp = 100.dp,
+) {
+    val lottoColors = LocalLottoColors.current
+    val interactionSource = remember { MutableInteractionSource() }
 
-            LottoOutlinedButton(
-                onClick = { },
-                enabled = false,
-                modifier = Modifier.padding(vertical = 4.dp)
+    if (isPrimary) {
+        Button(
+            onClick = onClick,
+            modifier = modifier
+                .scaleOnPressEffect(interactionSource)
+                .height(height),
+            enabled = enabled,
+            shape = AppShapes.Button,
+            interactionSource = interactionSource,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = lottoColors.accent,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp
+            ),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("Disabled Outlined")
+                icon()
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
-    }
-}
-
-@Preview(name = "Portrait - Pixel 4", device = Devices.PIXEL_4, showBackground = true)
-@Composable
-private fun LottoButtonPortraitPreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(LottoTheme.spacing.md)) {
-            LottoButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier
+                .scaleOnPressEffect(interactionSource)
+                .height(height),
+            enabled = enabled,
+            shape = AppShapes.Button,
+            interactionSource = interactionSource,
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = lottoColors.cardLight,
+                contentColor = lottoColors.textPrimary
+            ),
+            border = BorderStroke(1.dp, lottoColors.divider),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("세로 모드 버튼")
-            }
-        }
-    }
-}
-
-@Preview(name = "Landscape", device = Devices.AUTOMOTIVE_1024p, widthDp = 720, heightDp = 360, showBackground = true)
-@Composable
-private fun LottoButtonLandscapePreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(LottoTheme.spacing.md)) {
-            LottoButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("가로 모드 버튼")
-            }
-        }
-    }
-}
-
-@Preview(name = "Small Screen", widthDp = 320, heightDp = 480, showBackground = true)
-@Composable
-private fun LottoButtonSmallScreenPreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(8.dp)) {
-            LottoButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("작은 화면")
-            }
-
-            LottoOutlinedButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("작은 화면")
-            }
-        }
-    }
-}
-
-@Preview(name = "Large Text (1.5x)", fontScale = 1.5f, showBackground = true)
-@Composable
-private fun LottoButtonLargeTextPreview() {
-    LottoTheme {
-        Column(modifier = Modifier.padding(16.dp)) {
-            LottoButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("큰 텍스트 버튼")
-            }
-
-            LottoOutlinedButton(
-                onClick = { },
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Text("큰 텍스트 버튼")
+                icon()
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

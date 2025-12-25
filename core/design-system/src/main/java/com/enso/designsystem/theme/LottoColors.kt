@@ -38,8 +38,16 @@ data class LottoColors(
     // Text Hierarchy (Semantic aliases)
     val textPrimary: Color,
     val textSecondary: Color,
+    val textTertiary: Color,
     val textDisabled: Color,
     val textLink: Color,
+
+    // Toss-style UI Colors
+    val accent: Color,
+    val accentContainer: Color,
+    val chipBackground: Color,
+    val chipSelectedBackground: Color,
+    val divider: Color,
 
     // Legacy colors for backward compatibility (will be removed in future)
     val backgroundLight: Color,
@@ -88,8 +96,16 @@ internal val LightLottoColors = LottoColors(
     // Text
     textPrimary = Color(0xFF191F28),
     textSecondary = Color(0xFF8B95A1),
+    textTertiary = Color(0xFFB0B8C1),
     textDisabled = Color(0xFFB0B5BC),
-    textLink = Color(0xFF137FEC),
+    textLink = Color(0xFF3182F6),
+
+    // Toss-style UI Colors
+    accent = Color(0xFF3182F6),
+    accentContainer = Color(0xFFE8F3FF),
+    chipBackground = Color(0xFFF2F4F6),
+    chipSelectedBackground = Color(0xFFE8F3FF),
+    divider = Color(0xFFE5E8EB),
 
     // Legacy colors
     backgroundLight = Color(0xFFF2F4F6),
@@ -100,7 +116,7 @@ internal val LightLottoColors = LottoColors(
     textMainDark = Color(0xFFFFFFFF),
     textSubLight = Color(0xFF8B95A1),
     textSubDark = Color(0xFF92ADC9),
-    primary = Color(0xFF137FEC),
+    primary = Color(0xFF3182F6),
     winningGreen = Color(0xFF4CAF50),
     losingRed = Color(0xFFF44336),
 )
@@ -138,8 +154,16 @@ internal val DarkLottoColors = LottoColors(
     // Text
     textPrimary = Color(0xFFFFFFFF),
     textSecondary = Color(0xFF92ADC9),
+    textTertiary = Color(0xFF6B7A8A),
     textDisabled = Color(0xFF6B7280),
     textLink = Color(0xFFA4C9FF),
+
+    // Toss-style UI Colors
+    accent = Color(0xFF5B9CF6),
+    accentContainer = Color(0xFF1A3A5C),
+    chipBackground = Color(0xFF2A3441),
+    chipSelectedBackground = Color(0xFF1A3A5C),
+    divider = Color(0xFF2E3B47),
 
     // Legacy colors
     backgroundLight = Color(0xFFF2F4F6),
@@ -150,7 +174,7 @@ internal val DarkLottoColors = LottoColors(
     textMainDark = Color(0xFFFFFFFF),
     textSubLight = Color(0xFF8B95A1),
     textSubDark = Color(0xFF92ADC9),
-    primary = Color(0xFF137FEC),
+    primary = Color(0xFF5B9CF6),
     winningGreen = Color(0xFF4CAF50),
     losingRed = Color(0xFFF44336),
 )

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +32,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.enso.designsystem.modifier.scaleOnPress
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -62,7 +66,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.enso.designsystem.component.LottoActionCardButton
+import com.enso.designsystem.component.LottoCard
+import com.enso.designsystem.component.LottoSectionHeader
 import com.enso.designsystem.component.SlotMachineNumber
+import com.enso.designsystem.theme.AppShapes
 import com.enso.designsystem.theme.LocalLottoColors
 import com.enso.designsystem.theme.getLottoBallColor
 import com.enso.domain.model.LottoResult
@@ -186,14 +194,6 @@ fun LottoResultScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 지난 회차 정보
-            PastDrawsSection(
-                results = uiState.lottoResults.take(3),
-                onSelectResult = { result ->
-                    viewModel.onEvent(LottoResultEvent.SelectResult(result))
-                }
-            )
-
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -231,14 +231,14 @@ private fun WinningResultSection(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 축하 배지
+        // 축하 배지 - 토스 스타일
         Surface(
             modifier = Modifier.padding(bottom = 8.dp),
-            color = lottoColors.primary.copy(alpha = 0.1f),
-            shape = RoundedCornerShape(16.dp)
+            color = lottoColors.accentContainer,
+            shape = AppShapes.Pill
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -250,7 +250,7 @@ private fun WinningResultSection(
                     text = stringResource(R.string.home_winning_congrats),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = lottoColors.primary
+                    color = lottoColors.accent
                 )
             }
         }
@@ -258,7 +258,11 @@ private fun WinningResultSection(
         // 회차 선택
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable(onClick = onRoundClick)
+            modifier = Modifier.scaleOnPress(
+                shape = RoundedCornerShape(12.dp),
+                onClick = onRoundClick
+            )
+                .padding(horizontal = 10.dp)
         ) {
             val roundTextStyle = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold)
             // 슬롯머신 스타일 회차 표시: 숫자만 롤링, "회"는 고정
@@ -269,18 +273,18 @@ private fun WinningResultSection(
             Text(
                 text = stringResource(R.string.home_round_suffix),
                 style = roundTextStyle,
-                color = lottoColors.textMainLight
+                color = lottoColors.textPrimary
             )
             Icon(
                 Icons.Default.KeyboardArrowDown,
                 contentDescription = stringResource(R.string.home_select_round),
                 modifier = Modifier.size(32.dp),
-                tint = lottoColors.textSubLight
+                tint = lottoColors.textTertiary
             )
             Text(
                 text = stringResource(R.string.home_winning_result),
                 style = roundTextStyle,
-                color = lottoColors.textMainLight
+                color = lottoColors.textPrimary
             )
         }
 
@@ -289,7 +293,7 @@ private fun WinningResultSection(
             Text(
                 text = formatDrawDate(it.drawDate),
                 style = MaterialTheme.typography.bodyMedium,
-                color = lottoColors.textSubLight,
+                color = lottoColors.textSecondary,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
@@ -321,8 +325,8 @@ private fun WinningNumbersCard(result: LottoResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = lottoColors.cardLight),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = AppShapes.CardLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -355,7 +359,7 @@ private fun WinningNumbersCard(result: LottoResult) {
                         text = "+",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = lottoColors.textSubLight,
+                        color = lottoColors.textTertiary,
                         modifier = Modifier
                             .padding(horizontal = 4.dp)
                             .padding(top = 8.dp)
@@ -371,7 +375,7 @@ private fun WinningNumbersCard(result: LottoResult) {
                     Text(
                         text = stringResource(R.string.home_bonus),
                         fontSize = 9.sp,
-                        color = lottoColors.textSubLight,
+                        color = lottoColors.textTertiary,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -386,19 +390,19 @@ private fun WinningNumbersCard(result: LottoResult) {
                 Text(
                     text = stringResource(R.string.home_first_prize_format, result.firstPrize.winnerCount),
                     fontSize = 14.sp,
-                    color = lottoColors.textSubLight
+                    color = lottoColors.textSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 PrizeAmountRolling(
                     amount = result.firstPrize.winAmount,
                     textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Black),
-                    textColor = lottoColors.primary
+                    textColor = lottoColors.accent
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.home_total_sales_format, formatCurrencyShort(result.firstPrize.totalSalesAmount)),
                     fontSize = 12.sp,
-                    color = lottoColors.textSubLight
+                    color = lottoColors.textTertiary
                 )
             }
         }
@@ -417,160 +421,36 @@ private fun ActionButtonsSection(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // QR 스캔 버튼
-        Button(
+        LottoActionCardButton(
+            text = stringResource(R.string.home_qr_check),
             onClick = onQrScanClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(100.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = lottoColors.primary
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            modifier = Modifier.weight(1f),
+            icon = {
                 Text(
                     text = "📱",
                     fontSize = 28.sp
                 )
-                Text(
-                    stringResource(R.string.home_qr_check),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-            }
-        }
+            },
+            isPrimary = true,
+            height = 100.dp
+        )
 
         // 번호 직접 입력 버튼
-        OutlinedButton(
+        LottoActionCardButton(
+            text = stringResource(R.string.home_manual_input),
             onClick = onManualInputClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(100.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            modifier = Modifier.weight(1f),
+            icon = {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = null,
                     modifier = Modifier.size(28.dp),
-                    tint = lottoColors.primary
+                    tint = lottoColors.accent
                 )
-                Text(
-                    stringResource(R.string.home_manual_input),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = lottoColors.textMainLight
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PastDrawsSection(
-    results: List<LottoResult>,
-    onSelectResult: (LottoResult) -> Unit
-) {
-    val lottoColors = LocalLottoColors.current
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                stringResource(R.string.home_past_draws),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = lottoColors.textMainLight
-            )
-            Text(
-                stringResource(R.string.home_view_more),
-                style = MaterialTheme.typography.bodyMedium,
-                color = lottoColors.textSubLight
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            results.forEach { result ->
-                PastDrawItem(
-                    result = result,
-                    onClick = { onSelectResult(result) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PastDrawItem(
-    result: LottoResult,
-    onClick: () -> Unit
-) {
-    val lottoColors = LocalLottoColors.current
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = lottoColors.cardLight),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    stringResource(R.string.home_round_format, result.round),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = lottoColors.textMainLight
-                )
-                Text(
-                    formatDrawDate(result.drawDate),
-                    fontSize = 12.sp,
-                    color = lottoColors.textSubLight
-                )
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                result.numbers.forEach { number ->
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(getLottoBallColor(number, lottoColors)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = number.toString(),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-        }
+            },
+            isPrimary = false,
+            height = 100.dp
+        )
     }
 }
 
@@ -581,59 +461,93 @@ private fun RoundSelectionBottomSheet(
     onSelectRound: (LottoResult) -> Unit
 ) {
     val lottoColors = LocalLottoColors.current
+    val listState = rememberLazyListState()
+    
+    // 선택된 회차의 인덱스를 찾아서 해당 위치로 스크롤
+    LaunchedEffect(selectedRound) {
+        selectedRound?.let { round ->
+            val index = results.indexOfFirst { it.round == round }
+            if (index >= 0) {
+                listState.scrollToItem(index)
+            }
+        }
+    }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             stringResource(R.string.home_select_round),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            color = lottoColors.textPrimary,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
         )
 
         LazyColumn(
-            modifier = Modifier.height(400.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            state = listState,
+            modifier = Modifier.height(400.dp)
         ) {
-            items(results) { result ->
-                Card(
-                    onClick = { onSelectRound(result) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (result.round == selectedRound) {
-                            lottoColors.primary.copy(alpha = 0.1f)
-                        } else {
-                            lottoColors.cardLight
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+            itemsIndexed(results, key = { _, result -> result.round }) { index, result ->
+                // PastDrawItem과 동일한 디자인
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (result.round == selectedRound) lottoColors.accentContainer
+                            else Color.Transparent
+                        )
+                        .scaleOnPress { onSelectRound(result) }
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    // 왼쪽: 회차 + 날짜 세로 배치
+                    Column {
                         Text(
                             stringResource(R.string.home_round_format, result.round),
-                            fontWeight = if (result.round == selectedRound) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 18.sp,
-                            color = if (result.round == selectedRound) lottoColors.primary else lottoColors.textMainLight
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = if (result.round == selectedRound) lottoColors.accent else lottoColors.textPrimary
                         )
                         Text(
                             formatDrawDate(result.drawDate),
-                            fontSize = 14.sp,
-                            color = lottoColors.textSubLight
+                            fontSize = 12.sp,
+                            color = lottoColors.textSecondary
                         )
                     }
+
+                    // 오른쪽: 로또 번호 볼 6개
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        result.numbers.forEach { number ->
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(getLottoBallColor(number, lottoColors)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = number.toString(),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+                // 마지막 아이템이 아니면 구분선
+                if (index < results.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        color = lottoColors.divider
+                    )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

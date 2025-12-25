@@ -9,11 +9,11 @@ import androidx.compose.ui.graphics.Color
  * Material3 ColorScheme for light mode
  */
 internal val LightColorScheme = lightColorScheme(
-    // Primary Palette
-    primary = Color(0xFF137FEC),
+    // Primary Palette (Toss Blue)
+    primary = Color(0xFF3182F6),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD6E9FF),
-    onPrimaryContainer = Color(0xFF001F3B),
+    primaryContainer = Color(0xFFE8F3FF),
+    onPrimaryContainer = Color(0xFF001A3D),
 
     // Secondary Palette
     secondary = Color(0xFF526070),
@@ -86,7 +86,7 @@ internal val DarkColorScheme = darkColorScheme(
     surfaceTint = Color(0xFFA4C9FF),
     inverseSurface = Color(0xFFE2E2E5),
     inverseOnSurface = Color(0xFF2E3133),
-    inversePrimary = Color(0xFF137FEC),
+    inversePrimary = Color(0xFF3182F6),
 
     // Outline Colors
     outline = Color(0xFF8E9099),

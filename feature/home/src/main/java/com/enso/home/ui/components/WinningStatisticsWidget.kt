@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
+import com.enso.designsystem.theme.AppShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +57,8 @@ fun WinningStatisticsWidget(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = AppShapes.CardLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -85,7 +85,7 @@ fun WinningStatisticsWidget(
                 HorizontalDivider(
                     modifier = Modifier.fillMaxWidth(),
                     thickness = 1.dp,
-                    color = if (isDarkMode) lottoColors.textSubDark.copy(alpha = 0.2f) else lottoColors.textSubLight.copy(alpha = 0.2f)
+                    color = lottoColors.divider
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -153,7 +153,7 @@ private fun MainStatsSection(
                 text = winningRate,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = lottoColors.primary,
+                color = lottoColors.accent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
