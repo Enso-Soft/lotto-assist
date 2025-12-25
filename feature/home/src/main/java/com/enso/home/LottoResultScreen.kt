@@ -93,12 +93,12 @@ import java.util.Locale
 fun LottoResultScreen(
     viewModel: LottoResultViewModel = hiltViewModel(),
     onQrScanClick: () -> Unit = {},
+    onManualInputClick: (currentRound: Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    var showManualInputDialog by remember { mutableStateOf(false) }
     var showRoundBottomSheet by remember { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -121,23 +121,13 @@ fun LottoResultScreen(
                     onQrScanClick()
                 }
                 is LottoResultEffect.NavigateToManualInput -> {
-                    showManualInputDialog = true
+                    onManualInputClick(uiState.upcomingRound)
                 }
                 is LottoResultEffect.ShowTicketSaved -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.home_ticket_saved_message, effect.count))
                 }
             }
         }
-    }
-
-    if (showManualInputDialog) {
-        ManualInputDialog(
-            currentRound = uiState.currentRound,
-            onDismiss = { showManualInputDialog = false },
-            onConfirm = { round, numbers, isAuto ->
-                viewModel.onEvent(LottoResultEvent.SaveManualTicket(round, numbers, isAuto))
-            }
-        )
     }
 
     val lottoColors = LocalLottoColors.current

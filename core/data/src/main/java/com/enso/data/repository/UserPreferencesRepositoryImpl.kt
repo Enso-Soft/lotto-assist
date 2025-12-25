@@ -17,4 +17,12 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     override suspend fun saveSortType(sortType: TicketSortType) {
         dataSource.saveSortType(sortType)
     }
+
+    override fun getManualInputDefaultIsAuto(): Flow<Boolean> {
+        return dataSource.getManualInputDefaultIsAuto()
+    }
+
+    override suspend fun saveManualInputDefaultIsAuto(isAuto: Boolean) {
+        dataSource.saveManualInputDefaultIsAuto(isAuto)
+    }
 }

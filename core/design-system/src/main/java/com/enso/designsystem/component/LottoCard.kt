@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,11 +19,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.enso.designsystem.modifier.scaleOnPressEffect
 import com.enso.designsystem.theme.AppShapes
-import com.enso.designsystem.theme.LocalLottoColors
+import com.enso.designsystem.theme.LottoElevation
 
 /**
  * Lotto Card
- * elevation 없음, 16dp 모서리, 흰색 배경
+ * 약한 음영과 16dp 모서리, 밝은 표면 배경
  */
 @Composable
 fun LottoCard(
@@ -32,16 +33,14 @@ fun LottoCard(
     contentPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val lottoColors = LocalLottoColors.current
-
     Card(
         modifier = modifier,
         shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = containerColor ?: lottoColors.cardLight
+            containerColor = containerColor ?: MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
+            defaultElevation = LottoElevation.low
         )
     ) {
         Column(
@@ -64,7 +63,6 @@ fun LottoClickableCard(
     contentPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val lottoColors = LocalLottoColors.current
     val interactionSource = remember { MutableInteractionSource() }
 
     Card(
@@ -73,11 +71,11 @@ fun LottoClickableCard(
         shape = shape,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
-            containerColor = containerColor ?: lottoColors.cardLight
+            containerColor = containerColor ?: MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp
+            defaultElevation = LottoElevation.low,
+            pressedElevation = LottoElevation.medium
         )
     ) {
         Column(
@@ -117,13 +115,11 @@ fun LottoSectionCard(
     containerColor: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val lottoColors = LocalLottoColors.current
-
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = AppShapes.Card,
-        color = containerColor ?: lottoColors.cardLight,
-        shadowElevation = 0.dp
+        color = containerColor ?: MaterialTheme.colorScheme.surface,
+        shadowElevation = LottoElevation.low
     ) {
         Column(content = content)
     }
@@ -140,19 +136,17 @@ fun LottoSurface(
     contentPadding: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val lottoColors = LocalLottoColors.current
-
     val backgroundColor = when (level) {
-        SurfaceLevel.Background -> lottoColors.backgroundLight
-        SurfaceLevel.Base -> lottoColors.cardLight
-        SurfaceLevel.Elevated -> lottoColors.chipBackground
+        SurfaceLevel.Background -> MaterialTheme.colorScheme.background
+        SurfaceLevel.Base -> MaterialTheme.colorScheme.surface
+        SurfaceLevel.Elevated -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     Surface(
         modifier = modifier,
         shape = shape,
         color = backgroundColor,
-        shadowElevation = 0.dp
+        shadowElevation = LottoElevation.none
     ) {
         Column(
             modifier = Modifier.padding(contentPadding),

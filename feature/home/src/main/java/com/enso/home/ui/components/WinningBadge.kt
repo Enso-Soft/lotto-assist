@@ -1,17 +1,17 @@
 package com.enso.home.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.enso.designsystem.theme.AppShapes
+import com.enso.designsystem.theme.LottoTheme
 import com.enso.designsystem.theme.LocalLottoColors
+import com.enso.home.R
 
 @Composable
 fun WinningBadge(
@@ -19,25 +19,32 @@ fun WinningBadge(
     modifier: Modifier = Modifier
 ) {
     val lottoColors = LocalLottoColors.current
-    val winningGreen = lottoColors.success
-    val losingRed = Color(0xFFF44336) // Material Red 500
-
-    val (text, backgroundColor, textColor) = when (rank) {
-        1 -> Triple("1등", winningGreen, Color.White)
-        2 -> Triple("2등", winningGreen, Color.White)
-        3 -> Triple("3등", winningGreen, Color.White)
-        4 -> Triple("4등", winningGreen.copy(alpha = 0.8f), Color.White)
-        5 -> Triple("5등", winningGreen.copy(alpha = 0.6f), Color.White)
-        else -> Triple("낙첨", losingRed.copy(alpha = 0.15f), losingRed)
+    val badgeText = if (rank in 1..5) {
+        stringResource(R.string.home_statistics_rank_format, rank)
+    } else {
+        stringResource(R.string.home_winning_badge_lose)
+    }
+    val (backgroundColor, textColor) = if (rank in 1..5) {
+        val alpha = when (rank) {
+            1, 2, 3 -> 1f
+            4 -> 0.85f
+            else -> 0.7f
+        }
+        lottoColors.success.copy(alpha = alpha) to lottoColors.onSuccess
+    } else {
+        lottoColors.losingRed.copy(alpha = 0.12f) to lottoColors.losingRed
     }
 
     Text(
-        text = text,
+        text = badgeText,
         modifier = modifier
-            .background(backgroundColor, RoundedCornerShape(4.dp))
-            .padding(horizontal = 4.dp, vertical = 1.dp),
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
+            .background(backgroundColor, AppShapes.Badge)
+            .padding(
+                horizontal = LottoTheme.spacing.xs,
+                vertical = LottoTheme.spacing.xxs
+            ),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
         color = textColor,
     )
 }

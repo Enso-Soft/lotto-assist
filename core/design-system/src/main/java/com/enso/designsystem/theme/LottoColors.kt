@@ -95,20 +95,20 @@ internal val LightLottoColors = LottoColors(
 
     // Text
     textPrimary = Color(0xFF191F28),
-    textSecondary = Color(0xFF8B95A1),
-    textTertiary = Color(0xFFB0B8C1),
-    textDisabled = Color(0xFFB0B5BC),
+    textSecondary = Color(0xFF6B7684),
+    textTertiary = Color(0xFFA1AAB3),
+    textDisabled = Color(0xFFC1C7D0),
     textLink = Color(0xFF3182F6),
 
     // Toss-style UI Colors
     accent = Color(0xFF3182F6),
-    accentContainer = Color(0xFFE8F3FF),
-    chipBackground = Color(0xFFF2F4F6),
-    chipSelectedBackground = Color(0xFFE8F3FF),
-    divider = Color(0xFFE5E8EB),
+    accentContainer = Color(0xFFEAF2FF),
+    chipBackground = Color(0xFFF1F3F5),
+    chipSelectedBackground = Color(0xFFE7F0FF),
+    divider = Color(0xFFE9ECEF),
 
     // Legacy colors
-    backgroundLight = Color(0xFFF2F4F6),
+    backgroundLight = Color(0xFFF7F8FA),
     backgroundDark = Color(0xFF101922),
     cardLight = Color(0xFFFFFFFF),
     cardDark = Color(0xFF1B2631),
@@ -153,28 +153,28 @@ internal val DarkLottoColors = LottoColors(
 
     // Text
     textPrimary = Color(0xFFFFFFFF),
-    textSecondary = Color(0xFF92ADC9),
-    textTertiary = Color(0xFF6B7A8A),
-    textDisabled = Color(0xFF6B7280),
+    textSecondary = Color(0xFF94A3B8),
+    textTertiary = Color(0xFF64748B),
+    textDisabled = Color(0xFF475569),
     textLink = Color(0xFFA4C9FF),
 
     // Toss-style UI Colors
-    accent = Color(0xFF5B9CF6),
-    accentContainer = Color(0xFF1A3A5C),
-    chipBackground = Color(0xFF2A3441),
-    chipSelectedBackground = Color(0xFF1A3A5C),
-    divider = Color(0xFF2E3B47),
+    accent = Color(0xFF7FB0FF),
+    accentContainer = Color(0xFF203B5A),
+    chipBackground = Color(0xFF22303C),
+    chipSelectedBackground = Color(0xFF1F3B5C),
+    divider = Color(0xFF2B3642),
 
     // Legacy colors
-    backgroundLight = Color(0xFFF2F4F6),
-    backgroundDark = Color(0xFF101922),
+    backgroundLight = Color(0xFFF7F8FA),
+    backgroundDark = Color(0xFF0F1720),
     cardLight = Color(0xFFFFFFFF),
-    cardDark = Color(0xFF1B2631),
+    cardDark = Color(0xFF1B2430),
     textMainLight = Color(0xFF191F28),
     textMainDark = Color(0xFFFFFFFF),
     textSubLight = Color(0xFF8B95A1),
-    textSubDark = Color(0xFF92ADC9),
-    primary = Color(0xFF5B9CF6),
+    textSubDark = Color(0xFF94A3B8),
+    primary = Color(0xFF7FB0FF),
     winningGreen = Color(0xFF4CAF50),
     losingRed = Color(0xFFF44336),
 )

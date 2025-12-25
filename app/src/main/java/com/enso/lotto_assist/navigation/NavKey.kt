@@ -37,4 +37,12 @@ sealed interface NavKey {
      */
     @Serializable
     data object QrScanScreen : NavKey
+
+    /**
+     * Manual input screen for entering lotto numbers
+     */
+    @Serializable
+    data class ManualInputScreen(
+        val currentRound: Int
+    ) : NavKey
 }

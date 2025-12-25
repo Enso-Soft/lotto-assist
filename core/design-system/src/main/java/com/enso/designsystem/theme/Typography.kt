@@ -14,60 +14,60 @@ internal val LottoTypography = Typography(
     displayLarge = TextStyle(
         fontSize = 57.sp,
         lineHeight = 64.sp,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.SemiBold,
         letterSpacing = (-0.25).sp,
     ),
     displayMedium = TextStyle(
         fontSize = 45.sp,
         lineHeight = 52.sp,
-        fontWeight = FontWeight.Normal,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.15).sp,
     ),
     displaySmall = TextStyle(
         fontSize = 36.sp,
         lineHeight = 44.sp,
-        fontWeight = FontWeight.Normal,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.1).sp,
     ),
 
     // Headline styles
     headlineLarge = TextStyle(
         fontSize = 32.sp,
         lineHeight = 40.sp,
-        fontWeight = FontWeight.Normal,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.1).sp,
     ),
     headlineMedium = TextStyle(
         fontSize = 28.sp,
         lineHeight = 36.sp,
-        fontWeight = FontWeight.Normal,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.1).sp,
     ),
     headlineSmall = TextStyle(
         fontSize = 24.sp,
         lineHeight = 32.sp,
-        fontWeight = FontWeight.Normal,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.05).sp,
     ),
 
     // Title styles
     titleLarge = TextStyle(
         fontSize = 22.sp,
         lineHeight = 28.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.05).sp,
     ),
     titleMedium = TextStyle(
         fontSize = 16.sp,
         lineHeight = 24.sp,
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.15.sp,
+        letterSpacing = 0.sp,
     ),
     titleSmall = TextStyle(
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        fontWeight = FontWeight.Medium,
-        letterSpacing = 0.1.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.sp,
     ),
 
     // Body styles
@@ -75,19 +75,19 @@ internal val LottoTypography = Typography(
         fontSize = 16.sp,
         lineHeight = 24.sp,
         fontWeight = FontWeight.Normal,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.sp,
     ),
     bodyMedium = TextStyle(
         fontSize = 14.sp,
         lineHeight = 20.sp,
         fontWeight = FontWeight.Normal,
-        letterSpacing = 0.25.sp,
+        letterSpacing = 0.sp,
     ),
     bodySmall = TextStyle(
         fontSize = 12.sp,
         lineHeight = 16.sp,
         fontWeight = FontWeight.Normal,
-        letterSpacing = 0.4.sp,
+        letterSpacing = 0.sp,
     ),
 
     // Label styles
@@ -95,19 +95,19 @@ internal val LottoTypography = Typography(
         fontSize = 14.sp,
         lineHeight = 20.sp,
         fontWeight = FontWeight.Medium,
-        letterSpacing = 0.1.sp,
+        letterSpacing = 0.sp,
     ),
     labelMedium = TextStyle(
         fontSize = 12.sp,
         lineHeight = 16.sp,
         fontWeight = FontWeight.Medium,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.sp,
     ),
     labelSmall = TextStyle(
         fontSize = 11.sp,
         lineHeight = 16.sp,
         fontWeight = FontWeight.Medium,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.sp,
     ),
 )
 

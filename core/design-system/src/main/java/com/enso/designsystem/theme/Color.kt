@@ -12,14 +12,14 @@ internal val LightColorScheme = lightColorScheme(
     // Primary Palette (Toss Blue)
     primary = Color(0xFF3182F6),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE8F3FF),
-    onPrimaryContainer = Color(0xFF001A3D),
+    primaryContainer = Color(0xFFEAF2FF),
+    onPrimaryContainer = Color(0xFF001B3D),
 
     // Secondary Palette
-    secondary = Color(0xFF526070),
+    secondary = Color(0xFF5A6C7D),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD5E4F3),
-    onSecondaryContainer = Color(0xFF0F1D2A),
+    secondaryContainer = Color(0xFFE6EEF8),
+    onSecondaryContainer = Color(0xFF13202B),
 
     // Tertiary Palette
     tertiary = Color(0xFF6B5778),
@@ -28,20 +28,20 @@ internal val LightColorScheme = lightColorScheme(
     onTertiaryContainer = Color(0xFF251432),
 
     // Background & Surface
-    background = Color(0xFFF2F4F6),
+    background = Color(0xFFF7F8FA),
     onBackground = Color(0xFF191F28),
     surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF191F28),
-    surfaceVariant = Color(0xFFE1E5E9),
-    onSurfaceVariant = Color(0xFF44484D),
-    surfaceTint = Color(0xFF137FEC),
-    inverseSurface = Color(0xFF2E3133),
-    inverseOnSurface = Color(0xFFF0F0F3),
+    surfaceVariant = Color(0xFFF1F3F5),
+    onSurfaceVariant = Color(0xFF6B7684),
+    surfaceTint = Color(0xFF3182F6),
+    inverseSurface = Color(0xFF2F343A),
+    inverseOnSurface = Color(0xFFF5F6F8),
     inversePrimary = Color(0xFFA4C9FF),
 
     // Outline Colors
-    outline = Color(0xFF757780),
-    outlineVariant = Color(0xFFC4C6CF),
+    outline = Color(0xFFDDE2E7),
+    outlineVariant = Color(0xFFEEF1F4),
 
     // Error Colors
     error = Color(0xFFF44336),
@@ -77,20 +77,20 @@ internal val DarkColorScheme = darkColorScheme(
     onTertiaryContainer = Color(0xFFF3DAFF),
 
     // Background & Surface
-    background = Color(0xFF101922),
+    background = Color(0xFF0F1720),
     onBackground = Color(0xFFFFFFFF),
-    surface = Color(0xFF1B2631),
+    surface = Color(0xFF1B2430),
     onSurface = Color(0xFFE3E3E3),
-    surfaceVariant = Color(0xFF44474E),
-    onSurfaceVariant = Color(0xFFC4C6CF),
+    surfaceVariant = Color(0xFF273140),
+    onSurfaceVariant = Color(0xFF94A3B8),
     surfaceTint = Color(0xFFA4C9FF),
-    inverseSurface = Color(0xFFE2E2E5),
-    inverseOnSurface = Color(0xFF2E3133),
+    inverseSurface = Color(0xFFE4E7EB),
+    inverseOnSurface = Color(0xFF2B3138),
     inversePrimary = Color(0xFF3182F6),
 
     // Outline Colors
-    outline = Color(0xFF8E9099),
-    outlineVariant = Color(0xFF44474E),
+    outline = Color(0xFF3A4552),
+    outlineVariant = Color(0xFF2A3441),
 
     // Error Colors
     error = Color(0xFFFFB4AB),

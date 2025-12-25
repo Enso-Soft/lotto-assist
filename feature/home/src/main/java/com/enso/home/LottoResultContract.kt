@@ -10,6 +10,7 @@ data class LottoResultUiState(
     val selectedResult: LottoResult? = null,
     val error: String? = null,
     val currentRound: Int = 0,
+    val upcomingRound: Int = 0,  // 미추첨 회차 (티켓 등록용)
     val winningStatistics: WinningStatistics = WinningStatistics.EMPTY
 )
 

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.enso.domain.model.TicketSortType
@@ -38,7 +39,20 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
+    fun getManualInputDefaultIsAuto(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[MANUAL_INPUT_DEFAULT_IS_AUTO_KEY] ?: false
+        }
+    }
+
+    suspend fun saveManualInputDefaultIsAuto(isAuto: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[MANUAL_INPUT_DEFAULT_IS_AUTO_KEY] = isAuto
+        }
+    }
+
     companion object {
         private val SORT_TYPE_KEY = stringPreferencesKey("ticket_sort_type")
+        private val MANUAL_INPUT_DEFAULT_IS_AUTO_KEY = booleanPreferencesKey("manual_input_default_is_auto")
     }
 }

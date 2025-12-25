@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -41,9 +40,8 @@ fun LottoPrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     icon: ImageVector? = null,
-    height: Dp = 56.dp,
+    height: Dp = 52.dp,
 ) {
-    val lottoColors = LocalLottoColors.current
     val interactionSource = remember { MutableInteractionSource() }
 
     Button(
@@ -55,10 +53,10 @@ fun LottoPrimaryButton(
         shape = AppShapes.Button,
         interactionSource = interactionSource,
         colors = ButtonDefaults.buttonColors(
-            containerColor = lottoColors.accent,
-            contentColor = Color.White,
-            disabledContainerColor = lottoColors.accent.copy(alpha = 0.4f),
-            disabledContentColor = Color.White.copy(alpha = 0.6f)
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 0.dp,
@@ -93,7 +91,7 @@ fun LottoPrimaryButtonFull(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     icon: ImageVector? = null,
-    height: Dp = 56.dp,
+    height: Dp = 52.dp,
 ) {
     LottoPrimaryButton(
         text = text,
@@ -116,7 +114,7 @@ fun LottoSecondaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     icon: ImageVector? = null,
-    height: Dp = 56.dp,
+    height: Dp = 52.dp,
 ) {
     val lottoColors = LocalLottoColors.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -130,12 +128,12 @@ fun LottoSecondaryButton(
         shape = AppShapes.Button,
         interactionSource = interactionSource,
         colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = lottoColors.cardLight,
+            containerColor = MaterialTheme.colorScheme.surface,
             contentColor = lottoColors.textPrimary,
-            disabledContainerColor = lottoColors.cardLight,
+            disabledContainerColor = MaterialTheme.colorScheme.surface,
             disabledContentColor = lottoColors.textDisabled
         ),
-        border = BorderStroke(1.dp, lottoColors.divider),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,
@@ -171,15 +169,13 @@ fun LottoTextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val lottoColors = LocalLottoColors.current
-
     TextButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         colors = ButtonDefaults.textButtonColors(
-            contentColor = lottoColors.accent,
-            disabledContentColor = lottoColors.accent.copy(alpha = 0.4f)
+            contentColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
         )
     ) {
         Text(
@@ -202,7 +198,6 @@ fun LottoPillButton(
     enabled: Boolean = true,
     isPrimary: Boolean = true,
 ) {
-    val lottoColors = LocalLottoColors.current
     val interactionSource = remember { MutableInteractionSource() }
 
     Button(
@@ -214,8 +209,16 @@ fun LottoPillButton(
         shape = AppShapes.Pill,
         interactionSource = interactionSource,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isPrimary) lottoColors.accent else lottoColors.chipBackground,
-            contentColor = if (isPrimary) Color.White else lottoColors.textPrimary
+            containerColor = if (isPrimary) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+            contentColor = if (isPrimary) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 0.dp,
@@ -246,7 +249,6 @@ fun LottoActionCardButton(
     isPrimary: Boolean = true,
     height: Dp = 100.dp,
 ) {
-    val lottoColors = LocalLottoColors.current
     val interactionSource = remember { MutableInteractionSource() }
 
     if (isPrimary) {
@@ -259,8 +261,8 @@ fun LottoActionCardButton(
             shape = AppShapes.Button,
             interactionSource = interactionSource,
             colors = ButtonDefaults.buttonColors(
-                containerColor = lottoColors.accent,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             elevation = ButtonDefaults.buttonElevation(
                 defaultElevation = 0.dp,
@@ -291,10 +293,10 @@ fun LottoActionCardButton(
             shape = AppShapes.Button,
             interactionSource = interactionSource,
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = lottoColors.cardLight,
-                contentColor = lottoColors.textPrimary
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            border = BorderStroke(1.dp, lottoColors.divider),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             contentPadding = PaddingValues(16.dp)
         ) {
             Column(

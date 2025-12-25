@@ -25,6 +25,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.enso.home.LottoResultEvent
 import com.enso.home.LottoResultScreen
 import com.enso.home.LottoResultViewModel
+import com.enso.home.ManualInputScreen
 import com.enso.mylotto.MyLottoScreen
 import com.enso.qrscan.QrScanScreen
 import com.enso.qrscan.parser.LottoTicketInfo
@@ -88,6 +89,36 @@ fun LottoNavDisplay(
                         )
                     )
                 }
+                // When exiting Manual Input screen - use slide down animation
+                initialState is NavKey.ManualInputScreen -> {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = FastOutSlowInEasing
+                        )
+                    ) togetherWith slideOutVertically(
+                        targetOffsetY = { fullHeight -> fullHeight },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                }
+                // When entering Manual Input screen - use slide up animation
+                targetState is NavKey.ManualInputScreen -> {
+                    slideInVertically(
+                        initialOffsetY = { fullHeight -> fullHeight },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = FastOutSlowInEasing
+                        )
+                    ) togetherWith fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                }
                 // Default Toss-style animation for tab transitions
                 else -> {
                     fadeIn(
@@ -124,6 +155,9 @@ fun LottoNavDisplay(
                             viewModel = lottoResultViewModel,
                             onQrScanClick = {
                                 onNavigate(NavKey.QrScanScreen)
+                            },
+                            onManualInputClick = { currentRound ->
+                                onNavigate(NavKey.ManualInputScreen(currentRound))
                             },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -165,6 +199,15 @@ fun LottoNavDisplay(
                                 onBack()
                             },
                             modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    is NavKey.ManualInputScreen -> {
+                        ManualInputScreen(
+                            currentRound = navKey.currentRound,
+                            onNavigateBack = {
+                                onBack()
+                            }
                         )
                     }
                 }

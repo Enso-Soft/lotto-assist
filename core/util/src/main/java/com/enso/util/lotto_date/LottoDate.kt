@@ -106,6 +106,13 @@ object LottoDate {
     }
 
     /**
+     * 다음 추첨 회차를 반환 (미추첨 회차)
+     * 티켓 등록 시 사용할 회차
+     * @return Int 다음 추첨 회차
+     */
+    fun getUpcomingDrawRound(): Int = getCurrentDrawNumber() + 1
+
+    /**
      * 다음 추첨일시를 계산
      * 현재 시점 이후의 가장 가까운 토요일 20:45를 계산
      * 현재가 토요일 20:45 이후라면 다음 주 토요일 반환

@@ -62,6 +62,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -87,10 +88,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -103,6 +104,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import com.enso.designsystem.theme.LottoTheme
+import com.enso.designsystem.theme.getLottoBallColor
 import com.enso.qrscan.parser.LottoTicketInfo
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -286,7 +295,8 @@ fun QrScanScreen(
                     // 뒤로가기 버튼
                     CircularButton(
                         onClick = onBackClick,
-                        icon = "←"
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.qr_back)
                     )
 
                     // 중앙 안내 문구
@@ -299,7 +309,7 @@ fun QrScanScreen(
                             stringResource(R.string.qr_scan_guide)
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f)
                     )
@@ -307,7 +317,18 @@ fun QrScanScreen(
                     // 플래시 버튼
                     CircularButton(
                         onClick = { viewModel.onEvent(QrScanEvent.ToggleFlash) },
-                        icon = if (uiState.isFlashEnabled) "⚡" else "🔦"
+                        icon = if (uiState.isFlashEnabled) {
+                            Icons.Default.FlashOn
+                        } else {
+                            Icons.Default.FlashOff
+                        },
+                        contentDescription = stringResource(
+                            if (uiState.isFlashEnabled) {
+                                R.string.qr_flash_on
+                            } else {
+                                R.string.qr_flash_off
+                            }
+                        )
                     )
                 }
             }
@@ -317,6 +338,7 @@ fun QrScanScreen(
                 hostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(bottom = 16.dp)
             )
         }
@@ -329,7 +351,7 @@ fun QrScanScreen(
                 .offset { IntOffset(0, with(density) { animatedOffset.toPx().toInt() }) }
         ) {
             if (hasAnyTickets) {
-                SavedTicketsPager(
+                    SavedTicketsPager(
                     scannedResult = uiState.scannedResult,
                     winningDetail = uiState.currentWinningDetail,
                     tickets = uiState.savedTickets,
@@ -339,7 +361,7 @@ fun QrScanScreen(
                     onCancelDuplicate = { viewModel.onEvent(QrScanEvent.CancelDuplicateSave) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF2F4F6))
+                        .background(MaterialTheme.colorScheme.background)
                         .navigationBarsPadding()
                         .padding(vertical = 16.dp)
                         .onSizeChanged { size ->
@@ -380,21 +402,22 @@ private fun performVibration(
 @Composable
 private fun CircularButton(
     onClick: () -> Unit,
-    icon: String
+    icon: ImageVector,
+    contentDescription: String?
 ) {
     androidx.compose.material3.IconButton(
         onClick = onClick,
         modifier = Modifier
             .size(48.dp)
             .background(
-                color = Color.Black.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
                 shape = CircleShape
             )
     ) {
-        Text(
-            text = icon,
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.White
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onPrimary
         )
     }
 }
@@ -402,6 +425,7 @@ private fun CircularButton(
 @Composable
 private fun FocusIndicator(point: Offset) {
     var animationStarted by remember { mutableStateOf(false) }
+    val highlightColor = MaterialTheme.colorScheme.onPrimary
 
     LaunchedEffect(point) {
         animationStarted = false
@@ -429,7 +453,7 @@ private fun FocusIndicator(point: Offset) {
 
         // 외부 원
         drawCircle(
-            color = Color.White.copy(alpha = currentAlpha * 0.8f),
+            color = highlightColor.copy(alpha = currentAlpha * 0.8f),
             radius = currentRadius,
             center = point,
             style = Stroke(width = 3f)
@@ -437,7 +461,7 @@ private fun FocusIndicator(point: Offset) {
 
         // 내부 원 (더 작은 원)
         drawCircle(
-            color = Color.White.copy(alpha = currentAlpha * 0.4f),
+            color = highlightColor.copy(alpha = currentAlpha * 0.4f),
             radius = currentRadius * 0.7f,
             center = point,
             style = Stroke(width = 2f)
@@ -523,7 +547,7 @@ private fun QrOverlay(
         label = "qr_box_scale_animation"
     )
 
-    val qrPrimary = colorResource(R.color.qr_primary_blue)
+    val qrPrimary = MaterialTheme.colorScheme.primary
     val successColor = qrPrimary
     val cornerColor = if (isSuccess) successColor else qrPrimary.copy(alpha = 0.8f)
     val overlayAlpha = if (isFirstAppearance) animationProgress else 1f
@@ -1027,13 +1051,13 @@ private fun QrTicketCard(
         }
     }
     val highlightShape = MaterialTheme.shapes.small
-    val qrPrimary = colorResource(R.color.qr_primary_blue)
-    val qrPrimaryContainer = colorResource(R.color.qr_primary_container_blue)
+    val qrPrimary = MaterialTheme.colorScheme.primary
+    val qrPrimaryContainer = MaterialTheme.colorScheme.primaryContainer
 
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -1163,7 +1187,7 @@ private fun QrTicketCard(
                             color = if (isWinning) {
                                 qrPrimaryContainer.copy(alpha = 0.4f)
                             } else {
-                                Color.Transparent
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0f)
                             },
                             shape = highlightShape
                         )
@@ -1172,7 +1196,7 @@ private fun QrTicketCard(
                             color = if (isWinning) {
                                 qrPrimary.copy(alpha = 0.6f)
                             } else {
-                                Color.Transparent
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0f)
                             },
                             shape = highlightShape
                         )
@@ -1237,13 +1261,12 @@ private fun DuplicateConfirmationBanner(
     onConfirm: () -> Unit,
     onSkip: () -> Unit
 ) {
-    val qrPrimary = colorResource(R.color.qr_primary_blue)
-    val warningColor = Color(0xFFFF9800)
+    val lottoColors = LottoTheme.colors
     
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(warningColor.copy(alpha = 0.1f))
+            .background(lottoColors.warningContainer)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -1260,7 +1283,7 @@ private fun DuplicateConfirmationBanner(
                 text = stringResource(R.string.qr_duplicate_prompt_title, round),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = lottoColors.onWarningContainer,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -1292,7 +1315,7 @@ private fun DuplicateConfirmationBanner(
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = qrPrimary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
@@ -1333,20 +1356,21 @@ private fun QrHighlightedSmallLottoBall(
     isMatched: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val lottoColors = LottoTheme.colors
     val backgroundColor = if (isMatched) {
         qrLottoBallColor(number)
     } else {
-        Color.LightGray.copy(alpha = 0.3f)
+        lottoColors.chipBackground
     }
     val contentColor = if (isMatched) {
-        MaterialTheme.colorScheme.onPrimary
+        lottoColors.ballTextColor
     } else {
-        Color.DarkGray
+        lottoColors.textSecondary
     }
     val borderColor = if (isMatched) {
         MaterialTheme.colorScheme.outline
     } else {
-        Color.Gray.copy(alpha = 0.3f)
+        MaterialTheme.colorScheme.outlineVariant
     }
 
     Box(
@@ -1367,13 +1391,7 @@ private fun QrHighlightedSmallLottoBall(
 
 @Composable
 private fun qrLottoBallColor(number: Int): Color {
-    return when (number) {
-        in 1..10 -> colorResource(R.color.qr_ball_yellow)
-        in 11..20 -> colorResource(R.color.qr_ball_blue)
-        in 21..30 -> colorResource(R.color.qr_ball_red)
-        in 31..40 -> colorResource(R.color.qr_ball_grey)
-        else -> colorResource(R.color.qr_ball_green)
-    }
+    return getLottoBallColor(number, LottoTheme.colors)
 }
 
 private fun isPrizeExpired(drawDate: Date): Boolean {
@@ -1431,13 +1449,15 @@ private fun MinimizedSavedList(
         modifier = modifier
             .fillMaxWidth(0.9f),
         colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.7f)
+            containerColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f)
         ),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            val overlayTextColor = MaterialTheme.colorScheme.inverseOnSurface
+
             // 요약 헤더
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1447,13 +1467,23 @@ private fun MinimizedSavedList(
                 Text(
                     text = stringResource(R.string.qr_tickets_saved_count, count),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
+                    color = overlayTextColor,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = if (isExpanded) "▼" else "▲",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                Icon(
+                    imageVector = if (isExpanded) {
+                        Icons.Default.KeyboardArrowDown
+                    } else {
+                        Icons.Default.KeyboardArrowUp
+                    },
+                    contentDescription = stringResource(
+                        if (isExpanded) {
+                            R.string.qr_saved_list_collapse
+                        } else {
+                            R.string.qr_saved_list_expand
+                        }
+                    ),
+                    tint = overlayTextColor
                 )
             }
 
@@ -1462,18 +1492,16 @@ private fun MinimizedSavedList(
                 Spacer(modifier = Modifier.height(8.dp))
                 savedTickets.forEach { ticket ->
                     androidx.compose.material3.HorizontalDivider(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = overlayTextColor.copy(alpha = 0.2f),
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                     Text(
                         text = stringResource(R.string.qr_ticket_summary_format, ticket.round, ticket.gameCount),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = overlayTextColor.copy(alpha = 0.9f)
                     )
                 }
             }
         }
     }
 }
-
-

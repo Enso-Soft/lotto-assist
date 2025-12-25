@@ -48,7 +48,8 @@ class LottoResultViewModel @Inject constructor(
 
     private fun checkAndLoadInitialData() {
         val currentRound = LottoDate.getCurrentDrawNumber()
-        _state.update { it.copy(currentRound = currentRound) }
+        val upcomingRound = LottoDate.getUpcomingDrawRound()
+        _state.update { it.copy(currentRound = currentRound, upcomingRound = upcomingRound) }
 
         viewModelScope.launch {
             try {
@@ -87,7 +88,8 @@ class LottoResultViewModel @Inject constructor(
 
     private fun startInitialSync() {
         val currentRound = LottoDate.getCurrentDrawNumber()
-        _state.update { it.copy(currentRound = currentRound, isSyncing = true) }
+        val upcomingRound = LottoDate.getUpcomingDrawRound()
+        _state.update { it.copy(currentRound = currentRound, upcomingRound = upcomingRound, isSyncing = true) }
 
         viewModelScope.launch {
             syncLottoResultsUseCase(currentRound)
@@ -132,7 +134,8 @@ class LottoResultViewModel @Inject constructor(
 
     private fun loadLatestResult() {
         val currentRound = LottoDate.getCurrentDrawNumber()
-        _state.update { it.copy(currentRound = currentRound) }
+        val upcomingRound = LottoDate.getUpcomingDrawRound()
+        _state.update { it.copy(currentRound = currentRound, upcomingRound = upcomingRound) }
         loadResult(currentRound)
     }
 
@@ -173,7 +176,8 @@ class LottoResultViewModel @Inject constructor(
 
     private fun startSync() {
         val currentRound = LottoDate.getCurrentDrawNumber()
-        _state.update { it.copy(currentRound = currentRound, isSyncing = true) }
+        val upcomingRound = LottoDate.getUpcomingDrawRound()
+        _state.update { it.copy(currentRound = currentRound, upcomingRound = upcomingRound, isSyncing = true) }
 
         viewModelScope.launch {
             syncLottoResultsUseCase(currentRound)

@@ -76,9 +76,9 @@ fun MainScreen(
         mutableStateOf(listOf(NavKey.HomeScreen))
     }
 
-    // Hide bottom nav for QR scan screen (full screen experience)
+    // Hide bottom nav for QR scan screen and Manual Input screen (full screen experience)
     val currentKey = currentBackStack.lastOrNull() ?: NavKey.HomeScreen
-    val showBottomNav = currentKey !is NavKey.QrScanScreen
+    val showBottomNav = currentKey !is NavKey.QrScanScreen && currentKey !is NavKey.ManualInputScreen
     val isQrScreen = currentKey is NavKey.QrScanScreen
 
     // Get status bar height
