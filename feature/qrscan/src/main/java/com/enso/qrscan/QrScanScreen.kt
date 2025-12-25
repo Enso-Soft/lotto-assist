@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -339,6 +340,7 @@ fun QrScanScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFFF2F4F6))
+                        .navigationBarsPadding()
                         .padding(vertical = 16.dp)
                         .onSizeChanged { size ->
                             val height = with(density) { size.height.toDp().value.toInt() }
